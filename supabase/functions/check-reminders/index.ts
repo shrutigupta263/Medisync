@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.58.0";
-import { Resend } from "npm:resend@4.0.0";
+import { Resend } from "https://esm.sh/resend@2.0.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -176,10 +176,11 @@ serve(async (req) => {
 
       } catch (error) {
         console.error('Error processing reminder:', reminder.id, error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         results.push({
           reminder_id: reminder.id,
           status: 'failed',
-          error: error.message
+          error: errorMessage
         });
       }
     }
@@ -200,8 +201,9 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in check-reminders function:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500

@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -20,24 +21,148 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Bell,
   Plus,
   Pill,
   Calendar,
+  Edit,
+  Trash2,
+  Clock,
 } from "lucide-react";
-import { toast } from "sonner";
+import { useReminders, CreateReminderData } from "@/hooks/useReminders";
+import { format } from "date-fns";
 
 const Reminders = () => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [showSnoozeDialog, setShowSnoozeDialog] = useState(false);
-  const [reminderType, setReminderType] = useState<"medicine" | "appointment">("medicine");
-  const [reminders, setReminders] = useState<any[]>([]);
-  const [appointments, setAppointments] = useState<any[]>([]);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editingReminder, setEditingReminder] = useState<string | null>(null);
+  
+  const { reminders, isLoading, createReminder, updateReminder, deleteReminder, toggleComplete, isCreating } = useReminders();
+  
+  const [formData, setFormData] = useState<CreateReminderData>({
+    title: "",
+    description: null,
+    reminder_type: "medicine",
+    reminder_time: "",
+    is_recurring: false,
+    recurrence_pattern: null,
+  });
 
-  const handleSnooze = (duration: string) => {
-    toast.info(`Reminder snoozed for ${duration}`);
-    setShowSnoozeDialog(false);
+  const medicineReminders = reminders.filter(r => r.reminder_type === "medicine");
+  const appointmentReminders = reminders.filter(r => r.reminder_type === "appointment");
+
+  const handleSubmit = () => {
+    if (!formData.title || !formData.reminder_time) {
+      return;
+    }
+
+    if (editingReminder) {
+      updateReminder({
+        id: editingReminder,
+        updates: formData,
+      });
+      setShowEditDialog(false);
+      setEditingReminder(null);
+    } else {
+      createReminder(formData);
+      setShowCreateDialog(false);
+    }
+    
+    setFormData({
+      title: "",
+      description: null,
+      reminder_type: "medicine",
+      reminder_time: "",
+      is_recurring: false,
+      recurrence_pattern: null,
+    });
+  };
+
+  const handleEdit = (reminder: any) => {
+    setEditingReminder(reminder.id);
+    setFormData({
+      title: reminder.title,
+      description: reminder.description,
+      reminder_type: reminder.reminder_type,
+      reminder_time: reminder.reminder_time.substring(0, 16), // Format for datetime-local
+      is_recurring: reminder.is_recurring,
+      recurrence_pattern: reminder.recurrence_pattern,
+    });
+    setShowEditDialog(true);
+  };
+
+  const handleDelete = (id: string) => {
+    if (confirm("Are you sure you want to delete this reminder?")) {
+      deleteReminder(id);
+    }
+  };
+
+  const ReminderCard = ({ reminder }: { reminder: any }) => {
+    const reminderTime = new Date(reminder.reminder_time);
+    const isPast = reminderTime < new Date();
+    
+    return (
+      <Card className={`${reminder.is_completed ? 'opacity-60' : ''}`}>
+        <CardContent className="p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3 flex-1">
+              <Checkbox
+                checked={reminder.is_completed}
+                onCheckedChange={() => toggleComplete({ id: reminder.id, isCompleted: reminder.is_completed })}
+              />
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  {reminder.reminder_type === "medicine" ? (
+                    <Pill className="h-4 w-4 text-primary" />
+                  ) : (
+                    <Calendar className="h-4 w-4 text-secondary" />
+                  )}
+                  <h4 className={`font-semibold ${reminder.is_completed ? 'line-through' : ''}`}>
+                    {reminder.title}
+                  </h4>
+                </div>
+                {reminder.description && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {reminder.description}
+                  </p>
+                )}
+                <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    <span className={isPast && !reminder.is_completed ? 'text-destructive font-medium' : ''}>
+                      {format(reminderTime, "MMM dd, yyyy 'at' h:mm a")}
+                    </span>
+                  </div>
+                  {reminder.is_recurring && reminder.recurrence_pattern && (
+                    <span className="text-xs bg-secondary px-2 py-1 rounded">
+                      {reminder.recurrence_pattern}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleEdit(reminder)}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleDelete(reminder.id)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
   };
 
   return (
@@ -48,7 +173,7 @@ const Reminders = () => {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Reminders & Appointments</h1>
             <p className="text-muted-foreground mt-1">
-              Manage your medication reminders and appointments
+              Never miss your medications or appointments
             </p>
           </div>
           <Button onClick={() => setShowCreateDialog(true)} className="gap-2">
@@ -60,210 +185,217 @@ const Reminders = () => {
         {/* Tabs */}
         <Tabs defaultValue="all" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="medicine">Medicine</TabsTrigger>
-            <TabsTrigger value="appointments">Appointments</TabsTrigger>
+            <TabsTrigger value="all">
+              All ({reminders.length})
+            </TabsTrigger>
+            <TabsTrigger value="medicine">
+              Medicine ({medicineReminders.length})
+            </TabsTrigger>
+            <TabsTrigger value="appointments">
+              Appointments ({appointmentReminders.length})
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="all" className="space-y-4">
-            {/* Medicine Reminders */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Pill className="h-5 w-5 text-primary" />
-                  Medicine Reminders
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {reminders.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-8">
-                    <Pill className="h-12 w-12 text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground">No medicine reminders set</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {/* Reminders list */}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Appointments */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-secondary" />
-                  Upcoming Appointments
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {appointments.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-8">
-                    <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground">No appointments scheduled</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {/* Appointments list */}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            {isLoading ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground">Loading reminders...</p>
+                </CardContent>
+              </Card>
+            ) : reminders.length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <Bell className="h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No reminders set</h3>
+                  <p className="text-muted-foreground text-center mb-4">
+                    Create your first reminder to get started
+                  </p>
+                  <Button onClick={() => setShowCreateDialog(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create Reminder
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {reminders.map((reminder) => (
+                  <ReminderCard key={reminder.id} reminder={reminder} />
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="medicine" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Medicine Reminders</CardTitle>
-                <CardDescription>
-                  Manage reminders for your medications
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {reminders.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12">
-                    <Pill className="h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No reminders set</h3>
-                    <p className="text-muted-foreground text-center mb-4">
-                      Create your first reminder for medications
-                    </p>
-                    <Button onClick={() => setShowCreateDialog(true)}>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Create Reminder
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {/* Reminders list */}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            {medicineReminders.length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <Pill className="h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No medicine reminders</h3>
+                  <p className="text-muted-foreground text-center mb-4">
+                    Set reminders for your medications
+                  </p>
+                  <Button onClick={() => {
+                    setFormData({ ...formData, reminder_type: "medicine" });
+                    setShowCreateDialog(true);
+                  }}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Medicine Reminder
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {medicineReminders.map((reminder) => (
+                  <ReminderCard key={reminder.id} reminder={reminder} />
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="appointments" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Appointments</CardTitle>
-                <CardDescription>
-                  View and manage your upcoming appointments
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {appointments.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12">
-                    <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No appointments scheduled</h3>
-                    <p className="text-muted-foreground text-center mb-4">
-                      Add your first appointment
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {/* Appointments list */}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            {appointmentReminders.length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No appointments scheduled</h3>
+                  <p className="text-muted-foreground text-center mb-4">
+                    Add appointments to stay organized
+                  </p>
+                  <Button onClick={() => {
+                    setFormData({ ...formData, reminder_type: "appointment" });
+                    setShowCreateDialog(true);
+                  }}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Appointment
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {appointmentReminders.map((reminder) => (
+                  <ReminderCard key={reminder.id} reminder={reminder} />
+                ))}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
 
-        {/* Create Reminder Dialog */}
-        <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        {/* Create/Edit Reminder Dialog */}
+        <Dialog open={showCreateDialog || showEditDialog} onOpenChange={(open) => {
+          if (!open) {
+            setShowCreateDialog(false);
+            setShowEditDialog(false);
+            setEditingReminder(null);
+            setFormData({
+              title: "",
+              description: null,
+              reminder_type: "medicine",
+              reminder_time: "",
+              is_recurring: false,
+              recurrence_pattern: null,
+            });
+          }
+        }}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Create Reminder</DialogTitle>
+              <DialogTitle>{editingReminder ? "Edit Reminder" : "Create Reminder"}</DialogTitle>
               <DialogDescription>
-                Set up a new reminder for medicine or appointment
+                {editingReminder ? "Update your reminder details" : "Set up a new reminder for medicine or appointment"}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label>Type *</Label>
                 <Select
-                  value={reminderType}
-                  onValueChange={(value: "medicine" | "appointment") =>
-                    setReminderType(value)
-                  }
+                  value={formData.reminder_type}
+                  onValueChange={(value) => setFormData({ ...formData, reminder_type: value })}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="medicine">Medicine</SelectItem>
-                    <SelectItem value="appointment">Appointment</SelectItem>
+                    <SelectItem value="medicine">💊 Medicine</SelectItem>
+                    <SelectItem value="appointment">📅 Appointment</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="time">Time *</Label>
-                <Input id="time" type="time" />
+                <Label htmlFor="title">Title *</Label>
+                <Input
+                  id="title"
+                  placeholder={formData.reminder_type === "medicine" ? "e.g., Take Aspirin" : "e.g., Doctor Visit"}
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="repeat">Repeat *</Label>
-                <Select>
-                  <SelectTrigger id="repeat">
-                    <SelectValue placeholder="Select" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    <SelectItem value="daily">Daily</SelectItem>
-                    <SelectItem value="weekly">Weekly</SelectItem>
-                    <SelectItem value="custom">Custom</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  placeholder="Add any additional notes..."
+                  value={formData.description || ""}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value || null })}
+                />
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="reminder_time">Date & Time *</Label>
+                <Input
+                  id="reminder_time"
+                  type="datetime-local"
+                  value={formData.reminder_time}
+                  onChange={(e) => setFormData({ ...formData, reminder_time: e.target.value })}
+                />
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="is_recurring"
+                  checked={formData.is_recurring}
+                  onCheckedChange={(checked) => setFormData({ ...formData, is_recurring: checked as boolean })}
+                />
+                <Label htmlFor="is_recurring" className="cursor-pointer">
+                  Recurring reminder
+                </Label>
+              </div>
+
+              {formData.is_recurring && (
+                <div className="space-y-2">
+                  <Label htmlFor="recurrence">Recurrence Pattern *</Label>
+                  <Select
+                    value={formData.recurrence_pattern || ""}
+                    onValueChange={(value) => setFormData({ ...formData, recurrence_pattern: value })}
+                  >
+                    <SelectTrigger id="recurrence">
+                      <SelectValue placeholder="Select pattern" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="daily">Daily</SelectItem>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+              <Button variant="outline" onClick={() => {
+                setShowCreateDialog(false);
+                setShowEditDialog(false);
+                setEditingReminder(null);
+              }}>
                 Cancel
               </Button>
               <Button
-                onClick={() => {
-                  toast.success("Reminder created");
-                  setShowCreateDialog(false);
-                }}
+                onClick={handleSubmit}
+                disabled={isCreating || !formData.title || !formData.reminder_time}
               >
-                Create Reminder
+                {editingReminder ? "Update Reminder" : "Create Reminder"}
               </Button>
             </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Snooze Dialog */}
-        <Dialog open={showSnoozeDialog} onOpenChange={setShowSnoozeDialog}>
-          <DialogContent className="max-w-sm">
-            <DialogHeader>
-              <DialogTitle>Snooze Reminder</DialogTitle>
-              <DialogDescription>
-                How long would you like to snooze this reminder?
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-2 py-4">
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => handleSnooze("10 minutes")}
-              >
-                10 minutes
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => handleSnooze("30 minutes")}
-              >
-                30 minutes
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => handleSnooze("1 hour")}
-              >
-                1 hour
-              </Button>
-            </div>
           </DialogContent>
         </Dialog>
       </div>
