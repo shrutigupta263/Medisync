@@ -16,7 +16,7 @@ import {
 import { Brain, Download, ArrowLeft, AlertCircle, CheckCircle2, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 interface ParameterRow {
   parameter: string;
   value: string;
@@ -62,6 +62,53 @@ const Analysis = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [report, setReport] = useState<any>(null);
   const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null);
+  const [isLegacy, setIsLegacy] = useState(false);
+
+  // Normalize old analysis formats to the new UI schema
+  const normalizeAnalysis = (raw: any): { data: AnalysisData | null; legacy: boolean } => {
+    if (!raw) return { data: null, legacy: false };
+    if (raw.health_score && raw.parameters_table) {
+      return { data: raw as AnalysisData, legacy: false };
+    }
+    const analysisTable = Array.isArray(raw) ? raw : raw.analysis_table || [];
+    const parameters: ParameterRow[] = analysisTable.map((r: any) => ({
+      parameter: r.parameter,
+      value: String(r.value ?? ""),
+      unit: r.unit ?? "",
+      report_range: r.report_range ?? "",
+      normal_range: r.normal_range ?? "",
+      status: r.status ?? "Normal",
+      deviation: r.deviation ?? "",
+      note: r.note ?? "",
+    }));
+    const total = parameters.length;
+    const abnormal = parameters.filter(p => p.status !== "Normal").length;
+    const score = total ? Math.max(4, 10 - abnormal) : 7;
+    const reason = total
+      ? (abnormal === 0 ? "All parameters within normal limits." : `${abnormal}/${total} parameters outside normal range.`)
+      : "Limited data available. Consider re-running analysis.";
+    const predictionsRaw = Array.isArray(raw?.prediction_table) ? raw.prediction_table : [];
+    const preds: PredictionRow[] = predictionsRaw.map((p: any) => ({
+      condition: p.condition,
+      confidence: p.confidence,
+      linked_values: p.linked_values || [],
+      reason: p.reason_one_line || p.reason || "",
+      proof: p.proof_citation || p.proof || "",
+    }));
+    const abnormal_findings = parameters
+      .filter(p => p.status !== "Normal")
+      .map(p => `${p.parameter}: ${p.note || p.status}`);
+    const data: AnalysisData = {
+      health_score: { score, reason },
+      parameters_table: parameters,
+      abnormal_findings,
+      recommendations: [],
+      diet_plan: { breakfast: "", lunch: "", dinner: "", snacks: "" },
+      future_predictions: preds,
+      final_summary: raw?.final_summary || "",
+    };
+    return { data, legacy: true };
+  };
 
   useEffect(() => {
     if (reportId) {
@@ -84,7 +131,9 @@ const Analysis = () => {
       setReport(data);
       
       if (data.analysis_data) {
-        setAnalysisData(data.analysis_data as unknown as AnalysisData);
+        const { data: normalized, legacy } = normalizeAnalysis(data.analysis_data);
+        setAnalysisData(normalized);
+        setIsLegacy(legacy);
       } else if (data.analysis_status === 'pending') {
         // Auto-trigger analysis
         triggerAnalysis();
@@ -107,11 +156,10 @@ const Analysis = () => {
       if (error) throw error;
 
       if (data.success) {
-        setAnalysisData(data.analysis);
+        setAnalysisData(data.analysis as AnalysisData);
+        setIsLegacy(false);
         toast.success('Analysis completed successfully');
         fetchReport(); // Refresh to get updated status
-      } else {
-        throw new Error(data.error || 'Analysis failed');
       }
     } catch (error: any) {
       console.error('Analysis error:', error);
@@ -197,11 +245,18 @@ const Analysis = () => {
               AI-Powered Lab Report Analysis
             </p>
           </div>
-          {report.analysis_status === 'pending' && !isAnalyzing && (
+          {report.analysis_status === 'pending' && !isAnalyzing ? (
             <Button onClick={triggerAnalysis}>
               <Brain className="mr-2 h-4 w-4" />
               Analyze Report
             </Button>
+          ) : (
+            isLegacy && !isAnalyzing && (
+              <Button onClick={triggerAnalysis} variant="outline">
+                <Brain className="mr-2 h-4 w-4" />
+                Re-run AI Analysis
+              </Button>
+            )
           )}
         </div>
 
@@ -212,6 +267,18 @@ const Analysis = () => {
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
                 <p className="text-muted-foreground">Analyzing report with AI...</p>
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {!isAnalyzing && (!analysisData || !(analysisData.parameters_table && analysisData.parameters_table.length > 0)) && (
+          <Card>
+            <CardContent className="py-10 text-center">
+              <p className="text-muted-foreground mb-4">No AI analysis found for this report.</p>
+              <Button onClick={triggerAnalysis}>
+                <Brain className="mr-2 h-4 w-4" />
+                Run AI Analysis
+              </Button>
             </CardContent>
           </Card>
         )}
