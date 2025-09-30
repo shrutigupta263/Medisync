@@ -216,7 +216,7 @@ const Analysis = () => {
           </Card>
         )}
 
-        {analysisData && (
+        {analysisData && analysisData.health_score && (
           <>
             {/* Health Score Card */}
             <Card className="border-primary">
@@ -237,6 +237,7 @@ const Analysis = () => {
             </Card>
 
             {/* Parameters Table */}
+            {analysisData.parameters_table && analysisData.parameters_table.length > 0 && (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
@@ -299,9 +300,10 @@ const Analysis = () => {
                 </div>
               </CardContent>
             </Card>
+            )}
 
             {/* Abnormal Findings */}
-            {analysisData.abnormal_findings.length > 0 && (
+            {analysisData.abnormal_findings && analysisData.abnormal_findings.length > 0 && (
               <Card className="border-destructive/50">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -323,6 +325,7 @@ const Analysis = () => {
             )}
 
             {/* Recommendations */}
+            {analysisData.recommendations && analysisData.recommendations.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -341,8 +344,10 @@ const Analysis = () => {
                 </ul>
               </CardContent>
             </Card>
+            )}
 
             {/* Diet Plan */}
+            {analysisData.diet_plan && (
             <Card className="border-green-500/50">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -371,9 +376,10 @@ const Analysis = () => {
                 </div>
               </CardContent>
             </Card>
+            )}
 
             {/* Future Predictions */}
-            {analysisData.future_predictions.length > 0 && (
+            {analysisData.future_predictions && analysisData.future_predictions.length > 0 && (
               <Card className="border-orange-500/50">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -424,6 +430,7 @@ const Analysis = () => {
             )}
 
             {/* Final Summary */}
+            {analysisData.final_summary && (
             <Card className="border-primary">
               <CardHeader>
                 <CardTitle>Summary</CardTitle>
@@ -432,6 +439,7 @@ const Analysis = () => {
                 <p className="text-muted-foreground">{analysisData.final_summary}</p>
               </CardContent>
             </Card>
+            )}
           </>
         )}
       </div>
