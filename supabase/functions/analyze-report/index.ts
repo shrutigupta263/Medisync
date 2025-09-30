@@ -140,15 +140,8 @@ Return ONLY a valid JSON object with these keys:
 - Output ONLY valid JSON, no extra text or markdown.`;
 
     // Prepare content for AI based on file type
-    let userContent = `Analyze this lab report: ${report.title}\nFile type: ${report.file_type}`;
+    const userPrompt = `Analyze this lab report and provide comprehensive health analysis.`;
     
-    if (fileContent && report.file_type?.includes('image')) {
-      // For images, convert to base64
-      const arrayBuffer = await fileContent.arrayBuffer();
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-      userContent = `Analyze this lab report image. Extract all lab parameters, values, and reference ranges.`;
-    }
-
     // Call Lovable AI (Gemini)
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
@@ -159,16 +152,18 @@ Return ONLY a valid JSON object with these keys:
       model: 'google/gemini-2.5-flash',
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: userContent }
+        { role: 'user', content: userPrompt }
       ]
     };
 
-    // Add image if available
-    if (fileContent && report.file_type?.includes('image')) {
+    // Add file content (PDF or image) if available
+    if (fileContent) {
       const arrayBuffer = await fileContent.arrayBuffer();
       const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      
+      // Send file as multimodal content
       aiPayload.messages[1].content = [
-        { type: 'text', text: userContent },
+        { type: 'text', text: userPrompt },
         { 
           type: 'image_url', 
           image_url: { url: `data:${report.file_type};base64,${base64}` }
