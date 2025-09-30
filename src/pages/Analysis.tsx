@@ -17,7 +17,7 @@ import { Brain, Download, ArrowLeft, AlertCircle, CheckCircle2, TrendingUp } fro
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
-interface AnalysisRow {
+interface ParameterRow {
   parameter: string;
   value: string;
   unit: string;
@@ -26,15 +26,32 @@ interface AnalysisRow {
   status: "Normal" | "High" | "Low";
   deviation?: string;
   note: string;
-  ocr_snippet?: string;
 }
 
 interface PredictionRow {
   condition: string;
   confidence: "Low" | "Medium" | "High";
   linked_values: string[];
-  reason_one_line: string;
-  proof_citation: string;
+  reason: string;
+  proof: string;
+}
+
+interface AnalysisData {
+  health_score: {
+    score: number;
+    reason: string;
+  };
+  parameters_table: ParameterRow[];
+  abnormal_findings: string[];
+  recommendations: string[];
+  diet_plan: {
+    breakfast: string;
+    lunch: string;
+    dinner: string;
+    snacks: string;
+  };
+  future_predictions: PredictionRow[];
+  final_summary: string;
 }
 
 const Analysis = () => {
@@ -44,8 +61,7 @@ const Analysis = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [report, setReport] = useState<any>(null);
-  const [analysisData, setAnalysisData] = useState<AnalysisRow[]>([]);
-  const [predictionData, setPredictionData] = useState<PredictionRow[]>([]);
+  const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null);
 
   useEffect(() => {
     if (reportId) {
@@ -67,9 +83,8 @@ const Analysis = () => {
 
       setReport(data);
       
-      if (data.analysis_data && data.prediction_data) {
-        setAnalysisData(data.analysis_data as unknown as AnalysisRow[]);
-        setPredictionData(data.prediction_data as unknown as PredictionRow[]);
+      if (data.analysis_data) {
+        setAnalysisData(data.analysis_data as unknown as AnalysisData);
       } else if (data.analysis_status === 'pending') {
         // Auto-trigger analysis
         triggerAnalysis();
@@ -92,8 +107,7 @@ const Analysis = () => {
       if (error) throw error;
 
       if (data.success) {
-        setAnalysisData(data.analysis_data || []);
-        setPredictionData(data.prediction_data || []);
+        setAnalysisData(data.analysis);
         toast.success('Analysis completed successfully');
         fetchReport(); // Refresh to get updated status
       } else {
@@ -107,8 +121,10 @@ const Analysis = () => {
     }
   };
 
-  const exportToCSV = (type: 'analysis' | 'prediction') => {
-    const data = type === 'analysis' ? analysisData : predictionData;
+  const exportToCSV = () => {
+    if (!analysisData) return;
+    
+    const data = analysisData.parameters_table;
     const headers = Object.keys(data[0] || {});
     const csv = [
       headers.join(','),
@@ -119,9 +135,9 @@ const Analysis = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${report?.title}_${type}.csv`;
+    a.download = `${report?.title}_analysis.csv`;
     a.click();
-    toast.success(`${type} table exported`);
+    toast.success('Analysis exported');
   };
 
   if (isLoading) {
@@ -200,16 +216,34 @@ const Analysis = () => {
           </Card>
         )}
 
-        {analysisData.length > 0 && (
+        {analysisData && (
           <>
-            {/* Analysis Table */}
+            {/* Health Score Card */}
+            <Card className="border-primary">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Brain className="h-5 w-5 text-primary" />
+                  Overall Health Score
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-4">
+                  <div className="text-5xl font-bold text-primary">
+                    {analysisData.health_score.score}/10
+                  </div>
+                  <p className="text-muted-foreground">{analysisData.health_score.reason}</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Parameters Table */}
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <Brain className="h-5 w-5 text-primary" />
-                  Lab Parameters Analysis
+                  Lab Parameters
                 </CardTitle>
-                <Button onClick={() => exportToCSV('analysis')} variant="outline" size="sm">
+                <Button onClick={exportToCSV} variant="outline" size="sm">
                   <Download className="h-4 w-4 mr-2" />
                   Export CSV
                 </Button>
@@ -227,7 +261,7 @@ const Analysis = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {analysisData.map((row, idx) => (
+                      {analysisData.parameters_table.map((row, idx) => (
                         <TableRow 
                           key={idx}
                           className={row.status !== "Normal" ? "bg-destructive/5" : ""}
@@ -266,18 +300,86 @@ const Analysis = () => {
               </CardContent>
             </Card>
 
-            {/* Predictions Table */}
-            {predictionData.length > 0 && (
-              <Card className="border-orange-200 bg-orange-50/50 dark:bg-orange-950/20">
-                <CardHeader className="flex flex-row items-center justify-between">
+            {/* Abnormal Findings */}
+            {analysisData.abnormal_findings.length > 0 && (
+              <Card className="border-destructive/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <AlertCircle className="h-5 w-5 text-destructive" />
+                    Abnormal Findings
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2">
+                    {analysisData.abnormal_findings.map((finding, idx) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <span className="text-destructive mt-1">•</span>
+                        <span>{finding}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Recommendations */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-primary" />
+                  Recommendations & Suggestions
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2">
+                  {analysisData.recommendations.map((rec, idx) => (
+                    <li key={idx} className="flex items-start gap-2">
+                      <span className="text-primary mt-1">✓</span>
+                      <span>{rec}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+
+            {/* Diet Plan */}
+            <Card className="border-green-500/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <span className="text-2xl">🥗</span>
+                  Suggested Diet Plan
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <h4 className="font-semibold mb-1">Breakfast</h4>
+                    <p className="text-sm text-muted-foreground">{analysisData.diet_plan.breakfast}</p>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-1">Lunch</h4>
+                    <p className="text-sm text-muted-foreground">{analysisData.diet_plan.lunch}</p>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-1">Dinner</h4>
+                    <p className="text-sm text-muted-foreground">{analysisData.diet_plan.dinner}</p>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-1">Snacks</h4>
+                    <p className="text-sm text-muted-foreground">{analysisData.diet_plan.snacks}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Future Predictions */}
+            {analysisData.future_predictions.length > 0 && (
+              <Card className="border-orange-500/50">
+                <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <TrendingUp className="h-5 w-5 text-orange-600" />
-                    Health Predictions & Risk Assessment
+                    Future Health Predictions & Risks
                   </CardTitle>
-                  <Button onClick={() => exportToCSV('prediction')} variant="outline" size="sm">
-                    <Download className="h-4 w-4 mr-2" />
-                    Export CSV
-                  </Button>
                 </CardHeader>
                 <CardContent>
                   <div className="overflow-x-auto">
@@ -292,7 +394,7 @@ const Analysis = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {predictionData.map((row, idx) => (
+                        {analysisData.future_predictions.map((row, idx) => (
                           <TableRow key={idx}>
                             <TableCell className="font-medium">{row.condition}</TableCell>
                             <TableCell>
@@ -308,9 +410,9 @@ const Analysis = () => {
                             <TableCell className="text-sm">
                               {row.linked_values.join(', ')}
                             </TableCell>
-                            <TableCell className="text-sm">{row.reason_one_line}</TableCell>
+                            <TableCell className="text-sm">{row.reason}</TableCell>
                             <TableCell className="text-xs text-muted-foreground">
-                              {row.proof_citation}
+                              {row.proof}
                             </TableCell>
                           </TableRow>
                         ))}
@@ -320,6 +422,16 @@ const Analysis = () => {
                 </CardContent>
               </Card>
             )}
+
+            {/* Final Summary */}
+            <Card className="border-primary">
+              <CardHeader>
+                <CardTitle>Summary</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">{analysisData.final_summary}</p>
+              </CardContent>
+            </Card>
           </>
         )}
       </div>

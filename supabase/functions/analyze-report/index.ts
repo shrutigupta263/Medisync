@@ -46,17 +46,60 @@ serve(async (req) => {
       }
     }
 
-    // Prepare AI prompt
-    const systemPrompt = `You are an AI medical lab report analyzer. Your task is to:
-1. Extract all lab parameters, values, units, and reference ranges from the report
-2. Analyze each parameter against standard clinical ranges
-3. Identify abnormalities and provide concise medical insights
-4. Generate predictions for potential health conditions based on abnormal values
+    // Prepare AI prompt with the new comprehensive structure
+    const systemPrompt = `You are a medical AI assistant analyzing a patient's uploaded lab report.
+The report text/parameters will be provided below.
 
-Output ONLY a valid JSON object with this exact structure:
+Your tasks:
+
+### 1. Overall Health Score
+- Based on the results, calculate a simple **health score out of 10** (10 = excellent, 1 = poor).
+- Show reasoning in 1–2 lines.
+
+### 2. Parameters Summary
+- Create a clean table with:
+  * Parameter Name
+  * Value
+  * Unit
+  * Reference Range (from report if available, otherwise use standard clinical range with source)
+  * Status → ✅ Normal, ❌ Low, ❌ High
+  * Deviation (% or difference)
+  * One-line Note
+
+### 3. Abnormal Findings
+- List all abnormal parameters in bullet points.
+- Explain in **1–2 crisp sentences each** what it means.
+
+### 4. Recommendations & Suggestions
+- Provide **safe, general recommendations** (non-prescription only):
+  * Home remedies
+  * Lifestyle & diet tips
+  * Vitamins/minerals if deficient (e.g., "Low Vitamin D → sunlight + fortified foods")
+- Keep it practical and easy to follow.
+
+### 5. Basic Diet Plan (1–2 lines per meal)
+- Suggest a **very simple daily diet outline** based on report findings.
+- Use only natural, home-based foods (e.g., fruits, vegetables, whole grains, eggs, nuts).
+
+### 6. Future Predictions & Risks
+- Based on abnormal findings, generate a short **prediction table** with:
+  * Possible Future Risk/Condition
+  * Confidence (Low/Medium/High)
+  * Linked abnormal values
+  * One-line reason
+- Add one authoritative proof/citation (guideline/study/URL/DOI) per risk.
+
+### 7. Final Summary
+- End with a short **human-friendly summary paragraph** (2–3 lines) in plain language:
+  "Your blood sugar is slightly high, meaning you should avoid too much sugar and exercise regularly. Overall health score: 7/10."
+
+---
+
+### Output Format:
+Return ONLY a valid JSON object with these keys:
 {
-  "ocr_text": "full extracted text from report",
-  "analysis_table": [
+  "health_score": { "score": 7, "reason": "Brief explanation" },
+  "parameters_table": [
     {
       "parameter": "Parameter name",
       "value": "Numeric value",
@@ -65,20 +108,36 @@ Output ONLY a valid JSON object with this exact structure:
       "normal_range": "Standard clinical range",
       "status": "Normal|High|Low",
       "deviation": "How much above/below normal",
-      "note": "One-line clinical note",
-      "ocr_snippet": "Exact text from report"
+      "note": "One-line clinical note"
     }
   ],
-  "prediction_table": [
+  "abnormal_findings": ["Finding 1 explanation", "Finding 2 explanation"],
+  "recommendations": ["Recommendation 1", "Recommendation 2"],
+  "diet_plan": {
+    "breakfast": "Simple breakfast suggestion",
+    "lunch": "Simple lunch suggestion",
+    "dinner": "Simple dinner suggestion",
+    "snacks": "Simple snack suggestions"
+  },
+  "future_predictions": [
     {
-      "condition": "Condition or risk name",
+      "condition": "Risk or condition name",
       "confidence": "Low|Medium|High",
       "linked_values": ["param1", "param2"],
-      "reason_one_line": "Brief mechanism explanation",
-      "proof_citation": "Study/guideline reference"
+      "reason": "One-line explanation",
+      "proof": "Citation or reference"
     }
-  ]
-}`;
+  ],
+  "final_summary": "Human-friendly summary paragraph"
+}
+
+---
+
+📌 **Important rules:**
+- Keep language **concise, professional, and beginner-friendly**.
+- **Never give prescription medicines** — only safe vitamins, minerals, lifestyle, and food tips.
+- Always highlight abnormal values clearly.
+- Output ONLY valid JSON, no extra text or markdown.`;
 
     // Prepare content for AI based on file type
     let userContent = `Analyze this lab report: ${report.title}\nFile type: ${report.file_type}`;
@@ -160,13 +219,11 @@ Output ONLY a valid JSON object with this exact structure:
       throw new Error('Failed to parse AI analysis');
     }
 
-    // Update report with analysis
+    // Update report with complete analysis
     const { error: updateError } = await supabaseClient
       .from('health_reports')
       .update({
-        ocr_text: analysisResult.ocr_text || '',
-        analysis_data: analysisResult.analysis_table || [],
-        prediction_data: analysisResult.prediction_table || [],
+        analysis_data: analysisResult,
         analysis_status: 'completed',
         analyzed_at: new Date().toISOString(),
       })
@@ -182,8 +239,7 @@ Output ONLY a valid JSON object with this exact structure:
     return new Response(
       JSON.stringify({ 
         success: true,
-        analysis_data: analysisResult.analysis_table,
-        prediction_data: analysisResult.prediction_table,
+        analysis: analysisResult,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
