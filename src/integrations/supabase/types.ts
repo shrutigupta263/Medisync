@@ -149,6 +149,45 @@ export type Database = {
         }
         Relationships: []
       }
+      medicines: {
+        Row: {
+          created_at: string
+          dosage: string
+          end_date: string | null
+          frequency: string
+          id: string
+          medicine_name: string
+          notes: string | null
+          start_date: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          dosage: string
+          end_date?: string | null
+          frequency: string
+          id?: string
+          medicine_name: string
+          notes?: string | null
+          start_date: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          dosage?: string
+          end_date?: string | null
+          frequency?: string
+          id?: string
+          medicine_name?: string
+          notes?: string | null
+          start_date?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string

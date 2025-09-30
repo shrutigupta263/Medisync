@@ -15,29 +15,58 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Pill,
   Plus,
   TrendingUp,
+  Pencil,
+  Trash2,
 } from "lucide-react";
-import { toast } from "sonner";
+import { useMedicines, type MedicineInsert } from "@/hooks/useMedicines";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 const Medicine = () => {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [selectedView, setSelectedView] = useState("list");
-  const [medicines, setMedicines] = useState<any[]>([]);
+  const [formData, setFormData] = useState<MedicineInsert>({
+    medicine_name: "",
+    dosage: "",
+    frequency: "",
+    start_date: "",
+    end_date: null,
+    notes: null,
+  });
+
+  const { medicines, isLoading, addMedicine, deleteMedicine } = useMedicines();
+
+  const handleSubmit = () => {
+    if (!formData.medicine_name || !formData.dosage || !formData.frequency || !formData.start_date) {
+      return;
+    }
+    
+    addMedicine(formData);
+    setShowAddDialog(false);
+    setFormData({
+      medicine_name: "",
+      dosage: "",
+      frequency: "",
+      start_date: "",
+      end_date: null,
+      notes: null,
+    });
+  };
 
   const takenDoses = 0;
-  const totalDoses = 0;
-  const adherencePercentage = 0;
+  const totalDoses = medicines.length;
+  const adherencePercentage = totalDoses > 0 ? Math.round((takenDoses / totalDoses) * 100) : 0;
 
   return (
     <AppShell>
@@ -106,7 +135,13 @@ const Medicine = () => {
           </TabsList>
 
           <TabsContent value="list" className="space-y-4 mt-6">
-            {medicines.length === 0 ? (
+            {isLoading ? (
+              <Card>
+                <CardContent className="flex items-center justify-center py-12">
+                  <p className="text-muted-foreground">Loading medicines...</p>
+                </CardContent>
+              </Card>
+            ) : medicines.length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <Pill className="h-12 w-12 text-muted-foreground mb-4" />
@@ -121,11 +156,42 @@ const Medicine = () => {
                 </CardContent>
               </Card>
             ) : (
-              medicines.map((medicine) => (
-                <Card key={medicine.id} className="card-hover">
-                  {/* Medicine card content */}
-                </Card>
-              ))
+              <Card>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Medicine Name</TableHead>
+                      <TableHead>Dosage</TableHead>
+                      <TableHead>Frequency</TableHead>
+                      <TableHead>Start Date</TableHead>
+                      <TableHead>End Date</TableHead>
+                      <TableHead>Notes</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {medicines.map((medicine) => (
+                      <TableRow key={medicine.id}>
+                        <TableCell className="font-medium">{medicine.medicine_name}</TableCell>
+                        <TableCell>{medicine.dosage}</TableCell>
+                        <TableCell>{medicine.frequency}</TableCell>
+                        <TableCell>{new Date(medicine.start_date).toLocaleDateString()}</TableCell>
+                        <TableCell>{medicine.end_date ? new Date(medicine.end_date).toLocaleDateString() : "-"}</TableCell>
+                        <TableCell className="max-w-xs truncate">{medicine.notes || "-"}</TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => deleteMedicine(medicine.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </Card>
             )}
           </TabsContent>
 
@@ -170,60 +236,66 @@ const Medicine = () => {
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Medicine Name *</Label>
-                <Input id="name" placeholder="e.g., Aspirin" />
+                <Input
+                  id="name"
+                  placeholder="e.g., Aspirin"
+                  value={formData.medicine_name}
+                  onChange={(e) => setFormData({ ...formData, medicine_name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="dosage">Dosage *</Label>
+                <Input
+                  id="dosage"
+                  placeholder="e.g., 500 mg"
+                  value={formData.dosage}
+                  onChange={(e) => setFormData({ ...formData, dosage: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="frequency">Frequency *</Label>
+                <Input
+                  id="frequency"
+                  placeholder="e.g., 2 times/day"
+                  value={formData.frequency}
+                  onChange={(e) => setFormData({ ...formData, frequency: e.target.value })}
+                />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="strength">Strength *</Label>
-                  <Input id="strength" placeholder="e.g., 500 mg" />
+                  <Label htmlFor="start_date">Start Date *</Label>
+                  <Input
+                    id="start_date"
+                    type="date"
+                    value={formData.start_date}
+                    onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="form">Form *</Label>
-                  <Select>
-                    <SelectTrigger id="form">
-                      <SelectValue placeholder="Select" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="tablet">Tablet</SelectItem>
-                      <SelectItem value="capsule">Capsule</SelectItem>
-                      <SelectItem value="liquid">Liquid</SelectItem>
-                      <SelectItem value="injection">Injection</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="end_date">End Date</Label>
+                  <Input
+                    id="end_date"
+                    type="date"
+                    value={formData.end_date || ""}
+                    onChange={(e) => setFormData({ ...formData, end_date: e.target.value || null })}
+                  />
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="schedule">Schedule *</Label>
-                <Input id="schedule" placeholder="e.g., 08:00, 20:00" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="recurrence">Recurrence *</Label>
-                <Select>
-                  <SelectTrigger id="recurrence">
-                    <SelectValue placeholder="Select" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="daily">Daily</SelectItem>
-                    <SelectItem value="weekly">Weekly</SelectItem>
-                    <SelectItem value="custom">Custom</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="notes">Notes (Optional)</Label>
-                <Textarea id="notes" placeholder="e.g., Take after food" />
+                <Textarea
+                  id="notes"
+                  placeholder="e.g., Take after food"
+                  value={formData.notes || ""}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value || null })}
+                />
               </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowAddDialog(false)}>
                 Cancel
               </Button>
-              <Button
-                onClick={() => {
-                  toast.success("Medicine added successfully");
-                  setShowAddDialog(false);
-                }}
-              >
+              <Button onClick={handleSubmit}>
                 Add Medicine
               </Button>
             </DialogFooter>
