@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { FileText, Search, Download, Trash2, Eye, Upload, Brain } from "lucide-react";
 import { toast } from "sonner";
+import ReportUploadDialog from "@/components/ReportUploadDialog";
 
 const Reports = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -37,10 +38,7 @@ const Reports = () => {
   const [selectedReport, setSelectedReport] = useState<any>(null);
   const [reportToDelete, setReportToDelete] = useState<string | null>(null);
   const [reports, setReports] = useState<any[]>([]);
-
-  const handleUpload = () => {
-    toast.info("Report upload functionality will be implemented");
-  };
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
 
   const filteredReports = reports.filter((report) => {
     const matchesSearch =
@@ -70,7 +68,7 @@ const Reports = () => {
               View and manage your health reports
             </p>
           </div>
-          <Button className="gap-2" onClick={handleUpload}>
+          <Button className="gap-2" onClick={() => setUploadDialogOpen(true)}>
             <Upload className="h-4 w-4" />
             Upload Report
           </Button>
@@ -115,7 +113,7 @@ const Reports = () => {
                   ? "Try adjusting your filters"
                   : "Upload your first report to get started"}
               </p>
-              <Button onClick={handleUpload}>
+              <Button onClick={() => setUploadDialogOpen(true)}>
                 <Upload className="mr-2 h-4 w-4" />
                 Upload Report
               </Button>
@@ -224,6 +222,9 @@ const Reports = () => {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Upload Dialog */}
+        <ReportUploadDialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen} />
 
         {/* Delete Confirmation Dialog */}
         <AlertDialog open={!!reportToDelete} onOpenChange={() => setReportToDelete(null)}>
