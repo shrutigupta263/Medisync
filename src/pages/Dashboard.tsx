@@ -17,9 +17,11 @@ import {
 import { toast } from "sonner";
 import { useState } from "react";
 import ReportUploadDialog from "@/components/ReportUploadDialog";
+import { useReports } from "@/hooks/useReports";
 
 const Dashboard = () => {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const { uploadReport, isUploading } = useReports();
   
   const takenCount = 0;
   const totalDoses = 0;
@@ -29,7 +31,9 @@ const Dashboard = () => {
     <AppShell>
       <ReportUploadDialog 
         open={uploadDialogOpen} 
-        onOpenChange={setUploadDialogOpen} 
+        onOpenChange={setUploadDialogOpen}
+        onUpload={uploadReport}
+        isUploading={isUploading}
       />
       <div className="space-y-6 animate-fade-in">
         {/* Header */}

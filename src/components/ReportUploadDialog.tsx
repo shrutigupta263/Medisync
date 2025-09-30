@@ -7,17 +7,23 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Upload, FileText, X } from "lucide-react";
+import { Upload, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface ReportUploadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onUpload: (file: File) => void;
+  isUploading: boolean;
 }
 
-const ReportUploadDialog = ({ open, onOpenChange }: ReportUploadDialogProps) => {
+const ReportUploadDialog = ({ 
+  open, 
+  onOpenChange, 
+  onUpload, 
+  isUploading 
+}: ReportUploadDialogProps) => {
   const [dragActive, setDragActive] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -30,8 +36,7 @@ const ReportUploadDialog = ({ open, onOpenChange }: ReportUploadDialogProps) => 
   };
 
   const handleFileUpload = (file: File) => {
-    toast.success(`${file.name} uploaded successfully`);
-    setSelectedFile(null);
+    onUpload(file);
     onOpenChange(false);
   };
 
@@ -94,7 +99,11 @@ const ReportUploadDialog = ({ open, onOpenChange }: ReportUploadDialogProps) => 
           
           <div className="flex flex-col items-center gap-3">
             <div className="p-4 bg-primary/10 rounded-full">
-              <Upload className="h-8 w-8 text-primary" />
+              {isUploading ? (
+                <Loader2 className="h-8 w-8 text-primary animate-spin" />
+              ) : (
+                <Upload className="h-8 w-8 text-primary" />
+              )}
             </div>
             
             <div>
@@ -108,8 +117,9 @@ const ReportUploadDialog = ({ open, onOpenChange }: ReportUploadDialogProps) => 
                 variant="outline"
                 size="sm"
                 onClick={() => document.getElementById("file-upload")?.click()}
+                disabled={isUploading}
               >
-                Browse Files
+                {isUploading ? "Uploading..." : "Browse Files"}
               </Button>
             </div>
 

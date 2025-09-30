@@ -1,61 +1,50 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import AppShell from "@/components/AppShell";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { FileText, Search, Download, Trash2, Eye, Upload, Brain } from "lucide-react";
-import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FileText, Search, Upload } from "lucide-react";
 import ReportUploadDialog from "@/components/ReportUploadDialog";
+import ReportSummaryCard from "@/components/ReportSummaryCard";
+import ReportsList from "@/components/ReportsList";
+import { useReports } from "@/hooks/useReports";
 
 const Reports = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
-  const [selectedReport, setSelectedReport] = useState<any>(null);
-  const [reportToDelete, setReportToDelete] = useState<string | null>(null);
-  const [reports, setReports] = useState<any[]>([]);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
 
-  const filteredReports = reports.filter((report) => {
-    const matchesSearch =
-      report.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      report.summary.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = typeFilter === "all" || report.type === typeFilter;
-    return matchesSearch && matchesType;
-  });
+  const { 
+    reports, 
+    isLoading, 
+    uploadReport, 
+    isUploading, 
+    deleteReport,
+    downloadReport 
+  } = useReports();
 
-  const handleDelete = () => {
-    toast.success("Report deleted successfully");
-    setReportToDelete(null);
-  };
+  // Calculate recent reports (last 30 days)
+  const recentCount = useMemo(() => {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    return reports.filter(
+      (report) => new Date(report.upload_date) > thirtyDaysAgo
+    ).length;
+  }, [reports]);
 
-  const handleDownload = (reportTitle: string) => {
-    toast.success(`Downloading ${reportTitle}...`);
-  };
+  const filteredReports = useMemo(() => {
+    return reports.filter((report) => {
+      const matchesSearch = report.title
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
+      
+      const matchesType = typeFilter === "all" || 
+        (report.file_type?.includes(typeFilter.toLowerCase()) ?? false);
+      
+      return matchesSearch && matchesType;
+    });
+  }, [reports, searchQuery, typeFilter]);
 
   return (
     <AppShell>
@@ -65,14 +54,23 @@ const Reports = () => {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Reports & History</h1>
             <p className="text-muted-foreground mt-1">
-              View and manage your health reports
+              Upload and manage your health reports with AI-powered insights
             </p>
           </div>
-          <Button className="gap-2" onClick={() => setUploadDialogOpen(true)}>
+          <Button 
+            className="gap-2 bg-primary hover:bg-primary-dark" 
+            onClick={() => setUploadDialogOpen(true)}
+            disabled={isUploading}
+          >
             <Upload className="h-4 w-4" />
             Upload Report
           </Button>
         </div>
+
+        {/* Summary Card */}
+        {!isLoading && reports.length > 0 && (
+          <ReportSummaryCard count={reports.length} recentCount={recentCount} />
+        )}
 
         {/* Filters */}
         <Card>
@@ -81,7 +79,7 @@ const Reports = () => {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search reports..."
+                  placeholder="Search reports by title..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
@@ -93,9 +91,8 @@ const Reports = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="Blood Test">Blood Test</SelectItem>
-                  <SelectItem value="Imaging">Imaging</SelectItem>
-                  <SelectItem value="Prescription">Prescription</SelectItem>
+                  <SelectItem value="pdf">PDF Documents</SelectItem>
+                  <SelectItem value="image">Images</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -103,150 +100,50 @@ const Reports = () => {
         </Card>
 
         {/* Reports List */}
-        {filteredReports.length === 0 ? (
+        {isLoading ? (
+          <Card>
+            <CardContent className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
+                <p className="text-muted-foreground">Loading reports...</p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : filteredReports.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No reports found</h3>
+              <h3 className="text-lg font-semibold mb-2">
+                {reports.length === 0 ? "No reports yet" : "No matching reports"}
+              </h3>
               <p className="text-muted-foreground text-center mb-4">
-                {searchQuery || typeFilter !== "all"
-                  ? "Try adjusting your filters"
-                  : "Upload your first report to get started"}
+                {reports.length === 0
+                  ? "Upload your first health report to get AI-powered insights"
+                  : "Try adjusting your search or filters"}
               </p>
-              <Button onClick={() => setUploadDialogOpen(true)}>
-                <Upload className="mr-2 h-4 w-4" />
-                Upload Report
-              </Button>
+              {reports.length === 0 && (
+                <Button onClick={() => setUploadDialogOpen(true)}>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Upload Your First Report
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            {filteredReports.map((report) => (
-              <Card key={report.id} className="card-hover">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1 flex-1">
-                      <CardTitle className="text-lg">{report.title}</CardTitle>
-                      <CardDescription>
-                        {new Date(report.date).toLocaleDateString("en-US", {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })}
-                      </CardDescription>
-                    </div>
-                    <Badge variant="secondary">{report.type}</Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                    {report.summary}
-                  </p>
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {report.tags.map((tag: string) => (
-                      <Badge key={tag} variant="outline" className="text-xs">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => setSelectedReport(report)}
-                    >
-                      <Eye className="mr-2 h-3 w-3" />
-                      View
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleDownload(report.title)}
-                    >
-                      <Download className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-error hover:bg-error/10 hover:text-error hover:border-error"
-                      onClick={() => setReportToDelete(report.id)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <ReportsList
+            reports={filteredReports}
+            onView={downloadReport}
+            onDelete={(report) => deleteReport({ id: report.id, file_url: report.file_url })}
+          />
         )}
 
-        {/* Report Details Dialog */}
-        <Dialog open={!!selectedReport} onOpenChange={() => setSelectedReport(null)}>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{selectedReport?.title}</DialogTitle>
-              <DialogDescription>
-                {selectedReport &&
-                  new Date(selectedReport.date).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-              </DialogDescription>
-            </DialogHeader>
-            {selectedReport && (
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-semibold mb-2">Summary</h4>
-                  <p className="text-sm text-muted-foreground">{selectedReport.summary}</p>
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-2">Findings</h4>
-                  <ul className="space-y-2">
-                    {selectedReport.findings?.map((finding: string, idx: number) => (
-                      <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
-                        <span className="text-primary mt-0.5">•</span>
-                        <span>{finding}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="pt-4 border-t">
-                  <Button className="w-full" variant="outline">
-                    <Brain className="mr-2 h-4 w-4" />
-                    Ask AI about this report
-                  </Button>
-                </div>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
-
         {/* Upload Dialog */}
-        <ReportUploadDialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen} />
-
-        {/* Delete Confirmation Dialog */}
-        <AlertDialog open={!!reportToDelete} onOpenChange={() => setReportToDelete(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete the report from your
-                account.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDelete}
-                className="bg-error hover:bg-error/90 text-error-foreground"
-              >
-                Yes, delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <ReportUploadDialog 
+          open={uploadDialogOpen} 
+          onOpenChange={setUploadDialogOpen}
+          onUpload={uploadReport}
+          isUploading={isUploading}
+        />
       </div>
     </AppShell>
   );
