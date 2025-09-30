@@ -26,12 +26,26 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { User, Mail, Phone, Bell, Moon, Sun, LogOut, Shield, Info } from "lucide-react";
-import mockData from "@/data/mockData.json";
 import { toast } from "sonner";
 
 const Profile = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState(mockData.user);
+  const [formData, setFormData] = useState({
+    name: "John Doe",
+    email: "john.doe@example.com",
+    phone: "+91 98765 43210",
+    timezone: "Asia/Kolkata",
+    notificationPreferences: {
+      push: true,
+      email: true,
+      sms: false,
+    },
+    doNotDisturb: {
+      enabled: true,
+      start: "22:00",
+      end: "07:00",
+    },
+  });
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [fontSize, setFontSize] = useState("normal");
 
@@ -317,7 +331,7 @@ const Profile = () => {
             <Button variant="outline" className="w-full justify-start" asChild>
               <a href="#about">
                 <Info className="mr-2 h-4 w-4" />
-                About Healix
+                About MediSync
               </a>
             </Button>
             <Button variant="outline" className="w-full justify-start" asChild>

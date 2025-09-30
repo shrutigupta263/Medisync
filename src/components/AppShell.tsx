@@ -19,8 +19,8 @@ import {
   Bell,
   User,
   LogOut,
-  Plus,
   Menu,
+  Activity,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "sonner";
@@ -88,9 +88,9 @@ const AppShell = ({ children }: AppShellProps) => {
               <div className="flex flex-col gap-6 py-4">
                 <div className="flex items-center gap-2">
                   <div className="bg-primary/10 p-2 rounded-lg">
-                    <LayoutDashboard className="h-5 w-5 text-primary" />
+                    <Activity className="h-5 w-5 text-primary" />
                   </div>
-                  <span className="text-lg font-semibold">Healix</span>
+                  <span className="text-lg font-semibold">MediSync</span>
                 </div>
                 <NavLinks mobile />
               </div>
@@ -101,9 +101,9 @@ const AppShell = ({ children }: AppShellProps) => {
           <div className="flex items-center gap-8">
             <div className="flex items-center gap-2">
               <div className="bg-primary/10 p-2 rounded-lg">
-                <LayoutDashboard className="h-5 w-5 text-primary" />
+                <Activity className="h-5 w-5 text-primary" />
               </div>
-              <span className="text-lg font-semibold hidden sm:inline">Healix</span>
+              <span className="text-lg font-semibold hidden sm:inline">MediSync</span>
             </div>
             <div className="hidden lg:block">
               <NavLinks />
@@ -112,11 +112,6 @@ const AppShell = ({ children }: AppShellProps) => {
 
           {/* Right side actions */}
           <div className="flex items-center gap-2">
-            <Button size="icon" variant="outline" className="rounded-full">
-              <Plus className="h-5 w-5" />
-              <span className="sr-only">Quick add</span>
-            </Button>
-
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">

@@ -26,36 +26,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Pill,
   Plus,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  Bell,
   TrendingUp,
-  Calendar,
 } from "lucide-react";
-import mockData from "@/data/mockData.json";
 import { toast } from "sonner";
 
 const Medicine = () => {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [selectedView, setSelectedView] = useState("list");
+  const [medicines, setMedicines] = useState<any[]>([]);
 
-  const handleMarkTaken = (medicineName: string) => {
-    toast.success(`Marked ${medicineName} as taken`);
-  };
-
-  const handleSnooze = (medicineName: string) => {
-    toast.info(`Snoozed reminder for ${medicineName}`);
-  };
-
-  const handleMarkMissed = (medicineName: string) => {
-    toast.error(`Marked ${medicineName} as missed`);
-  };
-
-  // Calculate adherence
-  const takenDoses = mockData.doseHistory.filter((d) => d.status === "taken").length;
-  const totalDoses = mockData.doseHistory.length;
-  const adherencePercentage = Math.round((takenDoses / totalDoses) * 100);
+  const takenDoses = 0;
+  const totalDoses = 0;
+  const adherencePercentage = 0;
 
   return (
     <AppShell>
@@ -91,7 +73,7 @@ const Medicine = () => {
                   <p className="text-sm text-muted-foreground">This Week</p>
                   <div className="flex items-center gap-1 text-success">
                     <TrendingUp className="h-4 w-4" />
-                    <span className="font-semibold">+5%</span>
+                    <span className="font-semibold">+0%</span>
                   </div>
                 </div>
               </div>
@@ -124,78 +106,27 @@ const Medicine = () => {
           </TabsList>
 
           <TabsContent value="list" className="space-y-4 mt-6">
-            {mockData.medicines.map((medicine) => {
-              const recentDose = mockData.doseHistory.find(
-                (d) => d.medicineId === medicine.id
-              );
-              const nextDoseTime = medicine.times[0];
-
-              return (
+            {medicines.length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <Pill className="h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No medicines added yet</h3>
+                  <p className="text-muted-foreground text-center mb-4">
+                    Add your first medicine to start tracking
+                  </p>
+                  <Button onClick={() => setShowAddDialog(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Medicine
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              medicines.map((medicine) => (
                 <Card key={medicine.id} className="card-hover">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-4">
-                        <div className="bg-primary/10 p-3 rounded-xl">
-                          <Pill className="h-6 w-6 text-primary" />
-                        </div>
-                        <div>
-                          <CardTitle>{medicine.name}</CardTitle>
-                          <CardDescription>
-                            {medicine.strength} • {medicine.form}
-                          </CardDescription>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {medicine.notes}
-                          </p>
-                        </div>
-                      </div>
-                      <Badge variant="outline">{medicine.recurrence}</Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div>
-                        <p className="text-sm font-medium mb-2">Schedule</p>
-                        <div className="flex flex-wrap gap-2">
-                          {medicine.times.map((time) => (
-                            <Badge key={time} variant="secondary">
-                              <Clock className="h-3 w-3 mr-1" />
-                              {time}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="flex gap-2 pt-2">
-                        <Button
-                          size="sm"
-                          onClick={() => handleMarkTaken(medicine.name)}
-                          className="flex-1 bg-success hover:bg-success/90"
-                        >
-                          <CheckCircle2 className="mr-2 h-4 w-4" />
-                          Mark as Taken
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleSnooze(medicine.name)}
-                        >
-                          <Bell className="mr-2 h-4 w-4" />
-                          Snooze
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleMarkMissed(medicine.name)}
-                          className="text-error hover:bg-error/10 hover:text-error hover:border-error"
-                        >
-                          <XCircle className="mr-2 h-4 w-4" />
-                          Missed
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
+                  {/* Medicine card content */}
                 </Card>
-              );
-            })}
+              ))
+            )}
           </TabsContent>
 
           <TabsContent value="timeline" className="mt-6">
@@ -212,39 +143,16 @@ const Medicine = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {mockData.medicines.flatMap((medicine) =>
-                    medicine.times.map((time) => ({
-                      medicine,
-                      time,
-                    }))
-                  )
-                    .sort((a, b) => a.time.localeCompare(b.time))
-                    .map(({ medicine, time }, idx) => (
-                      <div key={`${medicine.id}-${time}`} className="flex gap-4">
-                        <div className="flex flex-col items-center">
-                          <div className="bg-primary/10 p-2 rounded-full">
-                            <Clock className="h-4 w-4 text-primary" />
-                          </div>
-                          {idx < mockData.medicines.length - 1 && (
-                            <div className="w-0.5 flex-1 bg-border mt-2" />
-                          )}
-                        </div>
-                        <div className="flex-1 pb-6">
-                          <div className="flex items-center justify-between mb-2">
-                            <p className="font-medium text-lg">{time}</p>
-                            <Badge variant="outline">Upcoming</Badge>
-                          </div>
-                          <div className="bg-muted/50 p-4 rounded-lg">
-                            <p className="font-medium">{medicine.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {medicine.strength} • {medicine.notes}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                </div>
+                {medicines.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <Pill className="h-12 w-12 text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground">No medicines scheduled for today</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Timeline content */}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

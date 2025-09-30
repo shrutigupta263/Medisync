@@ -29,16 +29,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FileText, Search, Download, Trash2, Eye, Upload, Brain } from "lucide-react";
-import mockData from "@/data/mockData.json";
 import { toast } from "sonner";
 
 const Reports = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
-  const [selectedReport, setSelectedReport] = useState<typeof mockData.reports[0] | null>(null);
+  const [selectedReport, setSelectedReport] = useState<any>(null);
   const [reportToDelete, setReportToDelete] = useState<string | null>(null);
+  const [reports, setReports] = useState<any[]>([]);
 
-  const filteredReports = mockData.reports.filter((report) => {
+  const handleUpload = () => {
+    toast.info("Report upload functionality will be implemented");
+  };
+
+  const filteredReports = reports.filter((report) => {
     const matchesSearch =
       report.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       report.summary.toLowerCase().includes(searchQuery.toLowerCase());
@@ -66,7 +70,7 @@ const Reports = () => {
               View and manage your health reports
             </p>
           </div>
-          <Button className="gap-2">
+          <Button className="gap-2" onClick={handleUpload}>
             <Upload className="h-4 w-4" />
             Upload Report
           </Button>
@@ -111,7 +115,7 @@ const Reports = () => {
                   ? "Try adjusting your filters"
                   : "Upload your first report to get started"}
               </p>
-              <Button>
+              <Button onClick={handleUpload}>
                 <Upload className="mr-2 h-4 w-4" />
                 Upload Report
               </Button>
@@ -141,7 +145,7 @@ const Reports = () => {
                     {report.summary}
                   </p>
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {report.tags.map((tag) => (
+                    {report.tags.map((tag: string) => (
                       <Badge key={tag} variant="outline" className="text-xs">
                         {tag}
                       </Badge>
@@ -202,7 +206,7 @@ const Reports = () => {
                 <div>
                   <h4 className="font-semibold mb-2">Findings</h4>
                   <ul className="space-y-2">
-                    {selectedReport.findings.map((finding, idx) => (
+                    {selectedReport.findings?.map((finding: string, idx: number) => (
                       <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
                         <span className="text-primary mt-0.5">•</span>
                         <span>{finding}</span>
