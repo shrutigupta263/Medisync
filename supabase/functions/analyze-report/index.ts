@@ -159,7 +159,16 @@ Return ONLY a valid JSON object with these keys:
     // Add file content (PDF or image) if available
     if (fileContent) {
       const arrayBuffer = await fileContent.arrayBuffer();
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      const bytes = new Uint8Array(arrayBuffer);
+      
+      // Convert to base64 in chunks to avoid stack overflow on large files
+      let base64 = '';
+      const chunkSize = 8192;
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        const chunk = bytes.slice(i, i + chunkSize);
+        base64 += String.fromCharCode(...chunk);
+      }
+      base64 = btoa(base64);
       
       // Send file as multimodal content
       aiPayload.messages[1].content = [
