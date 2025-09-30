@@ -39,9 +39,18 @@ const ReportsList = ({ reports, onView, onDelete }: ReportsListProps) => {
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
 
   const handleAnalysis = async (reportId: string, analysisStatus?: string) => {
-    if (analysisStatus === 'completed') {
+    // Check if analysis exists in report_analysis table
+    const { data: existingAnalysis } = await supabase
+      .from('report_analysis')
+      .select('id')
+      .eq('report_id', reportId)
+      .maybeSingle();
+
+    if (existingAnalysis) {
+      // Analysis exists, go directly to view it
       navigate(`/analysis?reportId=${reportId}`);
     } else {
+      // No analysis, trigger new one
       setAnalyzingId(reportId);
       try {
         const { data, error } = await supabase.functions.invoke('analyze-report', {

@@ -35,11 +35,6 @@ export const useReports = () => {
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from("health-reports")
-        .getPublicUrl(fileName);
-
       // Insert record into database
       const { data, error: dbError } = await supabase
         .from("health_reports")
@@ -54,6 +49,17 @@ export const useReports = () => {
         .single();
 
       if (dbError) throw dbError;
+
+      // Trigger AI analysis for this report
+      const { error: analysisError } = await supabase.functions.invoke('analyze-report', {
+        body: { reportId: data.id }
+      });
+
+      if (analysisError) {
+        console.warn('Auto-analysis failed:', analysisError);
+        toast.info('Report uploaded. You can run AI analysis manually.');
+      }
+
       return data;
     },
     onSuccess: () => {

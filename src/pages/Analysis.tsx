@@ -120,7 +120,7 @@ const Analysis = () => {
 
   const fetchReport = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: report, error } = await supabase
         .from('health_reports')
         .select('*')
         .eq('id', reportId)
@@ -128,14 +128,25 @@ const Analysis = () => {
 
       if (error) throw error;
 
-      setReport(data);
-      
-      if (data.analysis_data) {
-        const { data: normalized, legacy } = normalizeAnalysis(data.analysis_data);
+      setReport(report);
+
+      // Fetch analysis from report_analysis table
+      const { data: analysisRecord, error: analysisError } = await supabase
+        .from('report_analysis')
+        .select('analysis_json')
+        .eq('report_id', reportId)
+        .maybeSingle();
+
+      if (analysisError) {
+        console.error('Error fetching analysis:', analysisError);
+      }
+
+      if (analysisRecord?.analysis_json) {
+        const { data: normalized, legacy } = normalizeAnalysis(analysisRecord.analysis_json);
         setAnalysisData(normalized);
         setIsLegacy(legacy);
-      } else if (data.analysis_status === 'pending') {
-        // Auto-trigger analysis
+      } else if (report.analysis_status === 'pending') {
+        // Auto-trigger analysis if not started
         triggerAnalysis();
       }
     } catch (error: any) {

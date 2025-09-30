@@ -214,11 +214,24 @@ Return ONLY a valid JSON object with these keys:
       throw new Error('Failed to parse AI analysis');
     }
 
-    // Update report with complete analysis
+    // Store analysis in report_analysis table (unique per report)
+    const { error: analysisError } = await supabaseClient
+      .from('report_analysis')
+      .upsert({
+        report_id: reportId,
+        analysis_json: analysisResult,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'report_id' });
+
+    if (analysisError) {
+      console.error('Analysis save error:', analysisError);
+      throw new Error('Failed to save analysis');
+    }
+
+    // Update report status
     const { error: updateError } = await supabaseClient
       .from('health_reports')
       .update({
-        analysis_data: analysisResult,
         analysis_status: 'completed',
         analyzed_at: new Date().toISOString(),
       })
@@ -226,7 +239,7 @@ Return ONLY a valid JSON object with these keys:
 
     if (updateError) {
       console.error('Update error:', updateError);
-      throw new Error('Failed to save analysis');
+      throw new Error('Failed to update report status');
     }
 
     console.log('Analysis completed successfully');

@@ -173,6 +173,38 @@ export type Database = {
         }
         Relationships: []
       }
+      report_analysis: {
+        Row: {
+          analysis_json: Json
+          created_at: string
+          id: string
+          report_id: string
+          updated_at: string
+        }
+        Insert: {
+          analysis_json: Json
+          created_at?: string
+          id?: string
+          report_id: string
+          updated_at?: string
+        }
+        Update: {
+          analysis_json?: Json
+          created_at?: string
+          id?: string
+          report_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_analysis_report_fk"
+            columns: ["report_id"]
+            isOneToOne: true
+            referencedRelation: "health_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_settings: {
         Row: {
           created_at: string
