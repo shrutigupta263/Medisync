@@ -1,8 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Brain, Trash2, Calendar } from "lucide-react";
+import { Eye, Brain, Trash2, Calendar, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,6 +24,7 @@ interface Report {
   file_type: string | null;
   file_url: string | null;
   file_size: number | null;
+  analysis_status?: string;
 }
 
 interface ReportsListProps {
@@ -33,6 +36,34 @@ interface ReportsListProps {
 const ReportsList = ({ reports, onView, onDelete }: ReportsListProps) => {
   const navigate = useNavigate();
   const [reportToDelete, setReportToDelete] = useState<Report | null>(null);
+  const [analyzingId, setAnalyzingId] = useState<string | null>(null);
+
+  const handleAnalysis = async (reportId: string, analysisStatus?: string) => {
+    if (analysisStatus === 'completed') {
+      navigate(`/analysis?reportId=${reportId}`);
+    } else {
+      setAnalyzingId(reportId);
+      try {
+        const { data, error } = await supabase.functions.invoke('analyze-report', {
+          body: { reportId }
+        });
+
+        if (error) throw error;
+
+        if (data.success) {
+          toast.success('Analysis completed');
+          navigate(`/analysis?reportId=${reportId}`);
+        } else {
+          throw new Error(data.error || 'Analysis failed');
+        }
+      } catch (error: any) {
+        console.error('Analysis error:', error);
+        toast.error(error.message || 'Failed to analyze report');
+      } finally {
+        setAnalyzingId(null);
+      }
+    }
+  };
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString("en-US", {
@@ -93,10 +124,15 @@ const ReportsList = ({ reports, onView, onDelete }: ReportsListProps) => {
                   size="sm"
                   variant="outline"
                   className="flex-1 min-w-[120px] border-primary/50 text-primary hover:bg-primary/10"
-                  onClick={() => navigate(`/analysis?reportId=${report.id}`)}
+                  onClick={() => handleAnalysis(report.id, report.analysis_status)}
+                  disabled={analyzingId === report.id}
                 >
-                  <Brain className="mr-2 h-4 w-4" />
-                  AI Analysis
+                  {analyzingId === report.id ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Brain className="mr-2 h-4 w-4" />
+                  )}
+                  {report.analysis_status === 'completed' ? 'View Analysis' : 'AI Analysis'}
                 </Button>
                 <Button
                   size="sm"

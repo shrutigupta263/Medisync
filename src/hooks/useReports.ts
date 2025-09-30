@@ -10,7 +10,7 @@ export const useReports = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("health_reports")
-        .select("*")
+        .select("id, title, file_url, file_type, file_size, upload_date, analysis_status")
         .order("upload_date", { ascending: false });
 
       if (error) throw error;

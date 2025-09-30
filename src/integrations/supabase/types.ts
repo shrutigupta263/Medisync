@@ -98,11 +98,16 @@ export type Database = {
       health_reports: {
         Row: {
           ai_analysis: string | null
+          analysis_data: Json | null
+          analysis_status: string | null
+          analyzed_at: string | null
           created_at: string
           file_size: number | null
           file_type: string | null
           file_url: string | null
           id: string
+          ocr_text: string | null
+          prediction_data: Json | null
           title: string
           updated_at: string
           upload_date: string
@@ -110,11 +115,16 @@ export type Database = {
         }
         Insert: {
           ai_analysis?: string | null
+          analysis_data?: Json | null
+          analysis_status?: string | null
+          analyzed_at?: string | null
           created_at?: string
           file_size?: number | null
           file_type?: string | null
           file_url?: string | null
           id?: string
+          ocr_text?: string | null
+          prediction_data?: Json | null
           title: string
           updated_at?: string
           upload_date?: string
@@ -122,11 +132,16 @@ export type Database = {
         }
         Update: {
           ai_analysis?: string | null
+          analysis_data?: Json | null
+          analysis_status?: string | null
+          analyzed_at?: string | null
           created_at?: string
           file_size?: number | null
           file_type?: string | null
           file_url?: string | null
           id?: string
+          ocr_text?: string | null
+          prediction_data?: Json | null
           title?: string
           updated_at?: string
           upload_date?: string
