@@ -15,19 +15,22 @@ import {
   FileText,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useState } from "react";
+import ReportUploadDialog from "@/components/ReportUploadDialog";
 
 const Dashboard = () => {
-  // Mock data - replace with actual data fetching
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  
   const takenCount = 0;
   const totalDoses = 0;
   const adherencePercentage = 0;
 
-  const handleUploadReport = () => {
-    toast.info("Report upload functionality will be implemented");
-  };
-
   return (
     <AppShell>
+      <ReportUploadDialog 
+        open={uploadDialogOpen} 
+        onOpenChange={setUploadDialogOpen} 
+      />
       <div className="space-y-6 animate-fade-in">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -37,7 +40,7 @@ const Dashboard = () => {
               Here's your health overview for today
             </p>
           </div>
-          <Button className="gap-2" onClick={handleUploadReport}>
+          <Button className="gap-2" onClick={() => setUploadDialogOpen(true)}>
             <Upload className="h-4 w-4" />
             <span className="hidden sm:inline">Upload Report</span>
           </Button>
@@ -121,7 +124,7 @@ const Dashboard = () => {
             <p className="text-sm leading-relaxed">
               Upload your first health report to get personalized AI insights about your health.
             </p>
-            <Button variant="outline" className="mt-4" onClick={handleUploadReport}>
+            <Button variant="outline" className="mt-4" onClick={() => setUploadDialogOpen(true)}>
               <Upload className="mr-2 h-4 w-4" />
               Upload Report
             </Button>
