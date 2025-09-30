@@ -2,7 +2,6 @@ import { useState } from "react";
 import AppShell from "@/components/AppShell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   Dialog,
@@ -15,15 +14,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Pill,
-  Plus,
-  TrendingUp,
-  Pencil,
-  Trash2,
-} from "lucide-react";
-import { useMedicines, type MedicineInsert } from "@/hooks/useMedicines";
 import {
   Table,
   TableBody,
@@ -32,11 +22,26 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Pill,
+  Plus,
+  TrendingUp,
+  Edit,
+  Trash2,
+} from "lucide-react";
+import { useMedicines, CreateMedicineData } from "@/hooks/useMedicines";
+import { format } from "date-fns";
 
 const Medicine = () => {
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const [selectedView, setSelectedView] = useState("list");
-  const [formData, setFormData] = useState<MedicineInsert>({
+  const [editingMedicine, setEditingMedicine] = useState<string | null>(null);
+  
+  const { medicines, isLoading, createMedicine, updateMedicine, deleteMedicine, isCreating } = useMedicines();
+  
+  const [formData, setFormData] = useState<CreateMedicineData>({
     medicine_name: "",
     dosage: "",
     frequency: "",
@@ -45,15 +50,27 @@ const Medicine = () => {
     notes: null,
   });
 
-  const { medicines, isLoading, addMedicine, deleteMedicine } = useMedicines();
+  const takenDoses = 0;
+  const totalDoses = medicines.length;
+  const adherencePercentage = totalDoses > 0 ? Math.round((takenDoses / totalDoses) * 100) : 0;
 
   const handleSubmit = () => {
     if (!formData.medicine_name || !formData.dosage || !formData.frequency || !formData.start_date) {
       return;
     }
+
+    if (editingMedicine) {
+      updateMedicine({
+        id: editingMedicine,
+        updates: formData,
+      });
+      setShowEditDialog(false);
+      setEditingMedicine(null);
+    } else {
+      createMedicine(formData);
+      setShowAddDialog(false);
+    }
     
-    addMedicine(formData);
-    setShowAddDialog(false);
     setFormData({
       medicine_name: "",
       dosage: "",
@@ -64,9 +81,24 @@ const Medicine = () => {
     });
   };
 
-  const takenDoses = 0;
-  const totalDoses = medicines.length;
-  const adherencePercentage = totalDoses > 0 ? Math.round((takenDoses / totalDoses) * 100) : 0;
+  const handleEdit = (medicine: any) => {
+    setEditingMedicine(medicine.id);
+    setFormData({
+      medicine_name: medicine.medicine_name,
+      dosage: medicine.dosage,
+      frequency: medicine.frequency,
+      start_date: medicine.start_date,
+      end_date: medicine.end_date,
+      notes: medicine.notes,
+    });
+    setShowEditDialog(true);
+  };
+
+  const handleDelete = (id: string) => {
+    if (confirm("Are you sure you want to delete this medicine?")) {
+      deleteMedicine(id);
+    }
+  };
 
   return (
     <AppShell>
@@ -137,7 +169,7 @@ const Medicine = () => {
           <TabsContent value="list" className="space-y-4 mt-6">
             {isLoading ? (
               <Card>
-                <CardContent className="flex items-center justify-center py-12">
+                <CardContent className="py-12 text-center">
                   <p className="text-muted-foreground">Loading medicines...</p>
                 </CardContent>
               </Card>
@@ -157,40 +189,57 @@ const Medicine = () => {
               </Card>
             ) : (
               <Card>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Medicine Name</TableHead>
-                      <TableHead>Dosage</TableHead>
-                      <TableHead>Frequency</TableHead>
-                      <TableHead>Start Date</TableHead>
-                      <TableHead>End Date</TableHead>
-                      <TableHead>Notes</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {medicines.map((medicine) => (
-                      <TableRow key={medicine.id}>
-                        <TableCell className="font-medium">{medicine.medicine_name}</TableCell>
-                        <TableCell>{medicine.dosage}</TableCell>
-                        <TableCell>{medicine.frequency}</TableCell>
-                        <TableCell>{new Date(medicine.start_date).toLocaleDateString()}</TableCell>
-                        <TableCell>{medicine.end_date ? new Date(medicine.end_date).toLocaleDateString() : "-"}</TableCell>
-                        <TableCell className="max-w-xs truncate">{medicine.notes || "-"}</TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => deleteMedicine(medicine.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
+                <CardHeader>
+                  <CardTitle>Your Medicines</CardTitle>
+                  <CardDescription>Manage all your medications in one place</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Medicine Name</TableHead>
+                        <TableHead>Dosage</TableHead>
+                        <TableHead>Frequency</TableHead>
+                        <TableHead>Start Date</TableHead>
+                        <TableHead>End Date</TableHead>
+                        <TableHead>Notes</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {medicines.map((medicine) => (
+                        <TableRow key={medicine.id}>
+                          <TableCell className="font-medium">{medicine.medicine_name}</TableCell>
+                          <TableCell>{medicine.dosage}</TableCell>
+                          <TableCell>{medicine.frequency}</TableCell>
+                          <TableCell>{format(new Date(medicine.start_date), "MMM dd, yyyy")}</TableCell>
+                          <TableCell>
+                            {medicine.end_date ? format(new Date(medicine.end_date), "MMM dd, yyyy") : "Ongoing"}
+                          </TableCell>
+                          <TableCell className="max-w-[200px] truncate">{medicine.notes || "-"}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEdit(medicine)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDelete(medicine.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
               </Card>
             )}
           </TabsContent>
@@ -216,7 +265,7 @@ const Medicine = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {/* Timeline content */}
+                    <p className="text-muted-foreground">Timeline view coming soon...</p>
                   </div>
                 )}
               </CardContent>
@@ -224,20 +273,34 @@ const Medicine = () => {
           </TabsContent>
         </Tabs>
 
-        {/* Add Medicine Dialog */}
-        <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        {/* Add/Edit Medicine Dialog */}
+        <Dialog open={showAddDialog || showEditDialog} onOpenChange={(open) => {
+          if (!open) {
+            setShowAddDialog(false);
+            setShowEditDialog(false);
+            setEditingMedicine(null);
+            setFormData({
+              medicine_name: "",
+              dosage: "",
+              frequency: "",
+              start_date: "",
+              end_date: null,
+              notes: null,
+            });
+          }
+        }}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Add Medicine</DialogTitle>
+              <DialogTitle>{editingMedicine ? "Edit Medicine" : "Add Medicine"}</DialogTitle>
               <DialogDescription>
-                Add a new medicine to your tracking list
+                {editingMedicine ? "Update medicine details" : "Add a new medicine to your tracking list"}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Medicine Name *</Label>
+                <Label htmlFor="medicine_name">Medicine Name *</Label>
                 <Input
-                  id="name"
+                  id="medicine_name"
                   placeholder="e.g., Aspirin"
                   value={formData.medicine_name}
                   onChange={(e) => setFormData({ ...formData, medicine_name: e.target.value })}
@@ -292,11 +355,18 @@ const Medicine = () => {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+              <Button variant="outline" onClick={() => {
+                setShowAddDialog(false);
+                setShowEditDialog(false);
+                setEditingMedicine(null);
+              }}>
                 Cancel
               </Button>
-              <Button onClick={handleSubmit}>
-                Add Medicine
+              <Button
+                onClick={handleSubmit}
+                disabled={isCreating || !formData.medicine_name || !formData.dosage || !formData.frequency || !formData.start_date}
+              >
+                {editingMedicine ? "Update Medicine" : "Add Medicine"}
               </Button>
             </DialogFooter>
           </DialogContent>

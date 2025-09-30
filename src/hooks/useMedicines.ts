@@ -15,7 +15,7 @@ export interface Medicine {
   updated_at: string;
 }
 
-export interface MedicineInsert {
+export interface CreateMedicineData {
   medicine_name: string;
   dosage: string;
   frequency: string;
@@ -27,12 +27,9 @@ export interface MedicineInsert {
 export const useMedicines = () => {
   const queryClient = useQueryClient();
 
-  const { data: medicines = [], isLoading, error } = useQuery({
+  const { data: medicines = [], isLoading } = useQuery({
     queryKey: ["medicines"],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
       const { data, error } = await supabase
         .from("medicines")
         .select("*")
@@ -43,15 +40,15 @@ export const useMedicines = () => {
     },
   });
 
-  const addMedicine = useMutation({
-    mutationFn: async (medicine: MedicineInsert) => {
+  const createMedicine = useMutation({
+    mutationFn: async (medicineData: CreateMedicineData) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
       const { data, error } = await supabase
         .from("medicines")
         .insert({
-          ...medicine,
+          ...medicineData,
           user_id: user.id,
         })
         .select()
@@ -65,12 +62,12 @@ export const useMedicines = () => {
       toast.success("Medicine added successfully");
     },
     onError: (error: Error) => {
-      toast.error(`Failed to add medicine: ${error.message}`);
+      toast.error("Failed to add medicine: " + error.message);
     },
   });
 
   const updateMedicine = useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<Medicine> & { id: string }) => {
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<CreateMedicineData> }) => {
       const { data, error } = await supabase
         .from("medicines")
         .update(updates)
@@ -86,7 +83,7 @@ export const useMedicines = () => {
       toast.success("Medicine updated successfully");
     },
     onError: (error: Error) => {
-      toast.error(`Failed to update medicine: ${error.message}`);
+      toast.error("Failed to update medicine: " + error.message);
     },
   });
 
@@ -104,16 +101,18 @@ export const useMedicines = () => {
       toast.success("Medicine deleted successfully");
     },
     onError: (error: Error) => {
-      toast.error(`Failed to delete medicine: ${error.message}`);
+      toast.error("Failed to delete medicine: " + error.message);
     },
   });
 
   return {
     medicines,
     isLoading,
-    error,
-    addMedicine: addMedicine.mutate,
+    createMedicine: createMedicine.mutate,
     updateMedicine: updateMedicine.mutate,
     deleteMedicine: deleteMedicine.mutate,
+    isCreating: createMedicine.isPending,
+    isUpdating: updateMedicine.isPending,
+    isDeleting: deleteMedicine.isPending,
   };
 };
