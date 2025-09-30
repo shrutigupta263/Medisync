@@ -19,7 +19,7 @@ export interface Reminder {
 export interface CreateReminderData {
   title: string;
   description?: string | null;
-  reminder_type: string;
+  reminder_type: "medicine" | "appointment";
   reminder_time: string;
   is_recurring?: boolean;
   recurrence_pattern?: string | null;
@@ -51,7 +51,6 @@ export const useReminders = () => {
         .insert({
           ...reminderData,
           user_id: user.id,
-          is_completed: false,
         })
         .select()
         .single();
@@ -107,20 +106,18 @@ export const useReminders = () => {
     },
   });
 
-  const toggleComplete = useMutation({
-    mutationFn: async ({ id, isCompleted }: { id: string; isCompleted: boolean }) => {
-      const { data, error } = await supabase
+  const markAsCompleted = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
         .from("health_reminders")
-        .update({ is_completed: !isCompleted })
-        .eq("id", id)
-        .select()
-        .single();
+        .update({ is_completed: true })
+        .eq("id", id);
 
       if (error) throw error;
-      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["reminders"] });
+      toast.success("Reminder marked as completed");
     },
     onError: (error: Error) => {
       toast.error("Failed to update reminder: " + error.message);
@@ -133,7 +130,7 @@ export const useReminders = () => {
     createReminder: createReminder.mutate,
     updateReminder: updateReminder.mutate,
     deleteReminder: deleteReminder.mutate,
-    toggleComplete: toggleComplete.mutate,
+    markAsCompleted: markAsCompleted.mutate,
     isCreating: createReminder.isPending,
     isUpdating: updateReminder.isPending,
     isDeleting: deleteReminder.isPending,
