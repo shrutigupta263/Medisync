@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,35 +7,18 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Activity } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
-const SignIn = () => {
+const ResetPassword = () => {
   const navigate = useNavigate();
-  const { signIn, user } = useAuth();
-  const [email, setEmail] = useState("");
+  const { updatePassword } = useAuth();
   const [password, setPassword] = useState("");
-  const [errors, setErrors] = useState({ email: "", password: "" });
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [errors, setErrors] = useState({ password: "", confirmPassword: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (user) {
-      navigate("/dashboard");
-    }
-  }, [user, navigate]);
-
-  const validateEmail = (email: string) => {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(email);
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const newErrors = { email: "", password: "" };
-    
-    if (!email) {
-      newErrors.email = "Email is required";
-    } else if (!validateEmail(email)) {
-      newErrors.email = "Invalid email address";
-    }
+    const newErrors = { password: "", confirmPassword: "" };
     
     if (!password) {
       newErrors.password = "Password is required";
@@ -43,11 +26,17 @@ const SignIn = () => {
       newErrors.password = "Password must be at least 6 characters";
     }
     
+    if (!confirmPassword) {
+      newErrors.confirmPassword = "Please confirm your password";
+    } else if (password !== confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+    }
+    
     setErrors(newErrors);
     
-    if (!newErrors.email && !newErrors.password) {
+    if (!newErrors.password && !newErrors.confirmPassword) {
       setIsSubmitting(true);
-      const { error } = await signIn(email, password);
+      const { error } = await updatePassword(password);
       setIsSubmitting(false);
       
       if (!error) {
@@ -63,33 +52,15 @@ const SignIn = () => {
           <div className="mx-auto bg-primary/10 w-16 h-16 rounded-2xl flex items-center justify-center">
             <Activity className="w-8 h-8 text-primary" />
           </div>
-          <CardTitle className="text-3xl">Sign in to your Health Dashboard</CardTitle>
+          <CardTitle className="text-3xl">Set New Password</CardTitle>
           <CardDescription>
-            Enter your credentials to access your health data
+            Enter your new password below
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="john.doe@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={errors.email ? "border-error" : ""}
-                aria-invalid={!!errors.email}
-                aria-describedby={errors.email ? "email-error" : undefined}
-              />
-              {errors.email && (
-                <p id="email-error" className="text-sm text-error" role="alert">
-                  {errors.email}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">New Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -106,25 +77,29 @@ const SignIn = () => {
                 </p>
               )}
             </div>
-            <div className="text-right">
-              <Link
-                to="/forgot-password"
-                className="text-sm text-primary hover:underline focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded"
-              >
-                Forgot password?
-              </Link>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm New Password</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className={errors.confirmPassword ? "border-error" : ""}
+                aria-invalid={!!errors.confirmPassword}
+                aria-describedby={errors.confirmPassword ? "confirm-password-error" : undefined}
+              />
+              {errors.confirmPassword && (
+                <p id="confirm-password-error" className="text-sm text-error" role="alert">
+                  {errors.confirmPassword}
+                </p>
+              )}
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
+          <CardFooter>
             <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
-              {isSubmitting ? "Signing In..." : "Sign In"}
+              {isSubmitting ? "Updating..." : "Update Password"}
             </Button>
-            <p className="text-sm text-center text-muted-foreground">
-              Don't have an account?{" "}
-              <Link to="/signup" className="text-primary hover:underline font-medium">
-                Sign up
-              </Link>
-            </p>
           </CardFooter>
         </form>
       </Card>
@@ -132,4 +107,4 @@ const SignIn = () => {
   );
 };
 
-export default SignIn;
+export default ResetPassword;

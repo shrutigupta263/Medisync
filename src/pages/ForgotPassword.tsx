@@ -5,19 +5,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Activity, CheckCircle2, ArrowLeft } from "lucide-react";
-import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 const ForgotPassword = () => {
+  const { resetPassword } = useAuth();
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validateEmail = (email: string) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(email);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email) {
@@ -31,9 +33,13 @@ const ForgotPassword = () => {
     }
     
     setError("");
-    // Mock password reset
-    setSubmitted(true);
-    toast.success("Password reset link sent!");
+    setIsSubmitting(true);
+    const { error: resetError } = await resetPassword(email);
+    setIsSubmitting(false);
+    
+    if (!resetError) {
+      setSubmitted(true);
+    }
   };
 
   if (submitted) {
@@ -102,8 +108,8 @@ const ForgotPassword = () => {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full" size="lg">
-              Send Reset Link
+            <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
+              {isSubmitting ? "Sending..." : "Send Reset Link"}
             </Button>
             <Button asChild variant="ghost" className="w-full">
               <Link to="/signin">

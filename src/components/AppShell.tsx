@@ -23,7 +23,7 @@ import {
   Activity,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface AppShellProps {
   children: ReactNode;
@@ -40,9 +40,10 @@ const navigation = [
 const AppShell = ({ children }: AppShellProps) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
 
-  const handleLogout = () => {
-    toast.success("Logged out successfully");
+  const handleLogout = async () => {
+    await signOut();
     navigate("/signin");
   };
 
@@ -116,9 +117,9 @@ const AppShell = ({ children }: AppShellProps) => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src="" alt="User" />
+                    <AvatarImage src="" alt={user?.email || "User"} />
                     <AvatarFallback className="bg-primary text-primary-foreground">
-                      JD
+                      {user?.email?.substring(0, 2).toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
@@ -126,9 +127,9 @@ const AppShell = ({ children }: AppShellProps) => {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium">John Doe</p>
+                    <p className="text-sm font-medium">My Account</p>
                     <p className="text-xs text-muted-foreground">
-                      john.doe@example.com
+                      {user?.email}
                     </p>
                   </div>
                 </DropdownMenuLabel>

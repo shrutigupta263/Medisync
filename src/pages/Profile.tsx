@@ -27,13 +27,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import { User, Mail, Phone, Bell, Moon, Sun, LogOut, Shield, Info } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Profile = () => {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const [formData, setFormData] = useState({
-    name: "John Doe",
-    email: "john.doe@example.com",
-    phone: "+91 98765 43210",
+    name: user?.user_metadata?.full_name || "",
+    email: user?.email || "",
+    phone: "",
     timezone: "Asia/Kolkata",
     notificationPreferences: {
       push: true,
@@ -53,8 +55,8 @@ const Profile = () => {
     toast.success("Profile updated successfully");
   };
 
-  const handleLogout = () => {
-    toast.success("Logged out successfully");
+  const handleLogout = async () => {
+    await signOut();
     navigate("/signin");
   };
 
@@ -101,7 +103,7 @@ const Profile = () => {
                   id="email"
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  disabled
                   className="pl-10"
                 />
               </div>
