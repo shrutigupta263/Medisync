@@ -285,31 +285,43 @@ const Analysis = () => {
 
         {analysisData && analysisData.health_score && (
           <>
-            {/* Health Score Card */}
-            <Card className="border-primary">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Brain className="h-5 w-5 text-primary" />
-                  Overall Health Score
+            {/* Section 1: Health Score Card */}
+            <Card className="border-l-4 border-l-primary shadow-lg">
+              <CardHeader className="bg-primary/5">
+                <CardTitle className="flex items-center gap-3 text-xl">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <Brain className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-normal text-muted-foreground">Section 1</div>
+                    Overall Health Score
+                  </div>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-4">
-                  <div className="text-5xl font-bold text-primary">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-6">
+                  <div className="text-6xl font-bold text-primary bg-primary/5 p-6 rounded-xl">
                     {analysisData.health_score.score}/10
                   </div>
-                  <p className="text-muted-foreground">{analysisData.health_score.reason}</p>
+                  <div className="flex-1">
+                    <p className="text-lg leading-relaxed">{analysisData.health_score.reason}</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Parameters Table */}
+            {/* Section 2: Parameters Table */}
             {analysisData.parameters_table && analysisData.parameters_table.length > 0 && (
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <Brain className="h-5 w-5 text-primary" />
-                  Lab Parameters
+            <Card className="border-l-4 border-l-blue-500 shadow-lg">
+              <CardHeader className="flex flex-row items-center justify-between bg-blue-50/50 dark:bg-blue-950/20">
+                <CardTitle className="flex items-center gap-3 text-xl">
+                  <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                    <CheckCircle2 className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-normal text-muted-foreground">Section 2</div>
+                    Parameters Summary
+                  </div>
                 </CardTitle>
                 <Button onClick={exportToCSV} variant="outline" size="sm">
                   <Download className="h-4 w-4 mr-2" />
@@ -369,89 +381,121 @@ const Analysis = () => {
             </Card>
             )}
 
-            {/* Abnormal Findings */}
+            {/* Section 3: Abnormal Findings */}
             {analysisData.abnormal_findings && analysisData.abnormal_findings.length > 0 && (
-              <Card className="border-destructive/50">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <AlertCircle className="h-5 w-5 text-destructive" />
-                    Abnormal Findings
+              <Card className="border-l-4 border-l-destructive shadow-lg">
+                <CardHeader className="bg-destructive/5">
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <div className="p-2 bg-destructive/10 rounded-lg">
+                      <AlertCircle className="h-6 w-6 text-destructive" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-normal text-muted-foreground">Section 3</div>
+                      Abnormal Findings
+                    </div>
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2">
+                <CardContent className="pt-6">
+                  <div className="space-y-4">
                     {analysisData.abnormal_findings.map((finding, idx) => (
-                      <li key={idx} className="flex items-start gap-2">
-                        <span className="text-destructive mt-1">•</span>
-                        <span>{finding}</span>
-                      </li>
+                      <div key={idx} className="flex items-start gap-3 p-3 bg-destructive/5 rounded-lg border border-destructive/20">
+                        <div className="mt-0.5 p-1 bg-destructive/10 rounded-full">
+                          <AlertCircle className="h-4 w-4 text-destructive" />
+                        </div>
+                        <p className="flex-1 text-sm leading-relaxed">{finding}</p>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 </CardContent>
               </Card>
             )}
 
-            {/* Recommendations */}
+            {/* Section 4: Recommendations */}
             {analysisData.recommendations && analysisData.recommendations.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-primary" />
-                  Recommendations & Suggestions
+            <Card className="border-l-4 border-l-green-500 shadow-lg">
+              <CardHeader className="bg-green-50/50 dark:bg-green-950/20">
+                <CardTitle className="flex items-center gap-3 text-xl">
+                  <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                    <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-normal text-muted-foreground">Section 4</div>
+                    Recommendations & Suggestions
+                  </div>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
+              <CardContent className="pt-6">
+                <div className="space-y-3">
                   {analysisData.recommendations.map((rec, idx) => (
-                    <li key={idx} className="flex items-start gap-2">
-                      <span className="text-primary mt-1">✓</span>
-                      <span>{rec}</span>
-                    </li>
+                    <div key={idx} className="flex items-start gap-3 p-3 bg-green-50/50 dark:bg-green-950/20 rounded-lg border border-green-200/50 dark:border-green-800/50">
+                      <div className="mt-0.5 p-1 bg-green-100 dark:bg-green-900 rounded-full">
+                        <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                      </div>
+                      <p className="flex-1 text-sm leading-relaxed">{rec}</p>
+                    </div>
                   ))}
-                </ul>
+                </div>
               </CardContent>
             </Card>
             )}
 
-            {/* Diet Plan */}
+            {/* Section 5: Diet Plan */}
             {analysisData.diet_plan && (
-            <Card className="border-green-500/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <span className="text-2xl">🥗</span>
-                  Suggested Diet Plan
+            <Card className="border-l-4 border-l-amber-500 shadow-lg">
+              <CardHeader className="bg-amber-50/50 dark:bg-amber-950/20">
+                <CardTitle className="flex items-center gap-3 text-xl">
+                  <div className="p-2 bg-amber-100 dark:bg-amber-900 rounded-lg">
+                    <span className="text-2xl">🥗</span>
+                  </div>
+                  <div>
+                    <div className="text-sm font-normal text-muted-foreground">Section 5</div>
+                    Basic Diet Plan
+                  </div>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-6">
                 <div className="grid gap-4 md:grid-cols-2">
-                  <div>
-                    <h4 className="font-semibold mb-1">Breakfast</h4>
-                    <p className="text-sm text-muted-foreground">{analysisData.diet_plan.breakfast}</p>
+                  <div className="p-4 bg-amber-50/50 dark:bg-amber-950/20 rounded-lg border border-amber-200/50 dark:border-amber-800/50">
+                    <h4 className="font-semibold mb-2 flex items-center gap-2">
+                      <span>🍳</span> Breakfast
+                    </h4>
+                    <p className="text-sm leading-relaxed">{analysisData.diet_plan.breakfast || "No specific recommendations"}</p>
                   </div>
-                  <div>
-                    <h4 className="font-semibold mb-1">Lunch</h4>
-                    <p className="text-sm text-muted-foreground">{analysisData.diet_plan.lunch}</p>
+                  <div className="p-4 bg-amber-50/50 dark:bg-amber-950/20 rounded-lg border border-amber-200/50 dark:border-amber-800/50">
+                    <h4 className="font-semibold mb-2 flex items-center gap-2">
+                      <span>🍱</span> Lunch
+                    </h4>
+                    <p className="text-sm leading-relaxed">{analysisData.diet_plan.lunch || "No specific recommendations"}</p>
                   </div>
-                  <div>
-                    <h4 className="font-semibold mb-1">Dinner</h4>
-                    <p className="text-sm text-muted-foreground">{analysisData.diet_plan.dinner}</p>
+                  <div className="p-4 bg-amber-50/50 dark:bg-amber-950/20 rounded-lg border border-amber-200/50 dark:border-amber-800/50">
+                    <h4 className="font-semibold mb-2 flex items-center gap-2">
+                      <span>🍽️</span> Dinner
+                    </h4>
+                    <p className="text-sm leading-relaxed">{analysisData.diet_plan.dinner || "No specific recommendations"}</p>
                   </div>
-                  <div>
-                    <h4 className="font-semibold mb-1">Snacks</h4>
-                    <p className="text-sm text-muted-foreground">{analysisData.diet_plan.snacks}</p>
+                  <div className="p-4 bg-amber-50/50 dark:bg-amber-950/20 rounded-lg border border-amber-200/50 dark:border-amber-800/50">
+                    <h4 className="font-semibold mb-2 flex items-center gap-2">
+                      <span>🍎</span> Snacks
+                    </h4>
+                    <p className="text-sm leading-relaxed">{analysisData.diet_plan.snacks || "No specific recommendations"}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
             )}
 
-            {/* Future Predictions */}
+            {/* Section 6: Future Predictions */}
             {analysisData.future_predictions && analysisData.future_predictions.length > 0 && (
-              <Card className="border-orange-500/50">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-orange-600" />
-                    Future Health Predictions & Risks
+              <Card className="border-l-4 border-l-orange-500 shadow-lg">
+                <CardHeader className="bg-orange-50/50 dark:bg-orange-950/20">
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
+                      <TrendingUp className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-normal text-muted-foreground">Section 6</div>
+                      Future Predictions & Risks
+                    </div>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -496,14 +540,24 @@ const Analysis = () => {
               </Card>
             )}
 
-            {/* Final Summary */}
+            {/* Section 7: Final Summary */}
             {analysisData.final_summary && (
-            <Card className="border-primary">
-              <CardHeader>
-                <CardTitle>Summary</CardTitle>
+            <Card className="border-l-4 border-l-primary shadow-lg">
+              <CardHeader className="bg-primary/5">
+                <CardTitle className="flex items-center gap-3 text-xl">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <Brain className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-normal text-muted-foreground">Section 7</div>
+                    Final Summary
+                  </div>
+                </CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">{analysisData.final_summary}</p>
+              <CardContent className="pt-6">
+                <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
+                  <p className="text-lg leading-relaxed">{analysisData.final_summary}</p>
+                </div>
               </CardContent>
             </Card>
             )}
