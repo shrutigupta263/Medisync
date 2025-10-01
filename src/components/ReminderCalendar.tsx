@@ -43,12 +43,9 @@ const ReminderCalendar = () => {
               modifiers={{
                 hasReminder: datesWithReminders,
               }}
-              modifiersStyles={{
-                hasReminder: {
-                  fontWeight: "bold",
-                  textDecoration: "underline",
-                  color: "hsl(var(--primary))",
-                },
+              modifiersClassNames={{
+                hasReminder: "relative font-bold before:absolute before:bottom-1 before:left-1/2 before:-translate-x-1/2 before:w-1 before:h-1 before:rounded-full before:bg-primary",
+                selected: "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground hover:from-primary hover:to-primary/90 shadow-md shadow-primary/20"
               }}
             />
           </div>

@@ -16,6 +16,7 @@ import { useMedicines } from "@/hooks/useMedicines";
 import { useAuth } from "@/contexts/AuthContext";
 import ReminderCalendar from "@/components/ReminderCalendar";
 import { format } from "date-fns";
+import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
@@ -23,6 +24,7 @@ const Dashboard = () => {
   const { reports, uploadReport, isUploading } = useReports();
   const { reminders, isLoading: remindersLoading } = useReminders();
   const { medicines, isLoading: medicinesLoading } = useMedicines();
+  const navigate = useNavigate();
 
   // Calculate stats
   const reportsCount = reports.length;
@@ -65,7 +67,7 @@ const Dashboard = () => {
 
         {/* Overview Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <Card className="card-hover">
+          <Card className="card-hover cursor-pointer transition-all" onClick={() => navigate('/medicine')}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Medicine Status</CardTitle>
               <Pill className="h-4 w-4 text-primary" />
@@ -79,7 +81,7 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="card-hover">
+          <Card className="card-hover cursor-pointer transition-all" onClick={() => navigate('/reminders')}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Active Reminders</CardTitle>
               <Bell className="h-4 w-4 text-secondary" />
@@ -97,7 +99,7 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="card-hover">
+          <Card className="card-hover cursor-pointer transition-all" onClick={() => navigate('/reports')}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Recent Reports</CardTitle>
               <FileText className="h-4 w-4 text-accent" />
