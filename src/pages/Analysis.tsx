@@ -17,6 +17,7 @@ import { Brain, Download, ArrowLeft, AlertCircle, CheckCircle2, TrendingUp } fro
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import HealthChatbot from "@/components/HealthChatbot";
 interface ParameterRow {
   parameter: string;
   value: string;
@@ -270,6 +271,9 @@ const Analysis = () => {
             )
           )}
         </div>
+
+        {/* Health Chatbot */}
+        <HealthChatbot reportId={reportId || undefined} />
 
         {isAnalyzing && (
           <Card>

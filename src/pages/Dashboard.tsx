@@ -4,28 +4,47 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import AppShell from "@/components/AppShell";
 import {
-  Activity,
   Pill,
   Bell,
-  TrendingUp,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  Upload,
   FileText,
 } from "lucide-react";
-import { toast } from "sonner";
 import { useState } from "react";
 import ReportUploadDialog from "@/components/ReportUploadDialog";
 import { useReports } from "@/hooks/useReports";
+import { useReminders } from "@/hooks/useReminders";
+import { useMedicines } from "@/hooks/useMedicines";
+import { useAuth } from "@/contexts/AuthContext";
+import ReminderCalendar from "@/components/ReminderCalendar";
+import { format } from "date-fns";
 
 const Dashboard = () => {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-  const { uploadReport, isUploading } = useReports();
-  
+  const { user } = useAuth();
+  const { reports, uploadReport, isUploading } = useReports();
+  const { reminders, isLoading: remindersLoading } = useReminders();
+  const { medicines, isLoading: medicinesLoading } = useMedicines();
+
+  // Calculate stats
+  const reportsCount = reports.length;
+  const activeRemindersCount = reminders.filter(r => !r.is_completed).length;
+  const activeMedicinesCount = medicines.length;
+
+  // Get user's display name
+  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || "User";
+
+  // Calculate medicine adherence (placeholder logic)
   const takenCount = 0;
-  const totalDoses = 0;
-  const adherencePercentage = 0;
+  const totalDoses = activeMedicinesCount * 3; // Assume 3 doses per day
+  const adherencePercentage = totalDoses > 0 ? (takenCount / totalDoses) * 100 : 0;
+
+  // Get next reminder
+  const upcomingReminders = reminders
+    .filter(r => !r.is_completed && new Date(r.reminder_time) > new Date())
+    .sort((a, b) => new Date(a.reminder_time).getTime() - new Date(b.reminder_time).getTime());
+  const nextReminder = upcomingReminders[0];
+
+  // Get last report
+  const lastReport = reports[0];
 
   return (
     <AppShell>
@@ -37,17 +56,11 @@ const Dashboard = () => {
       />
       <div className="space-y-6 animate-fade-in">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Welcome back, John</h1>
-            <p className="text-muted-foreground mt-1">
-              Here's your health overview for today
-            </p>
-          </div>
-          <Button className="gap-2" onClick={() => setUploadDialogOpen(true)}>
-            <Upload className="h-4 w-4" />
-            <span className="hidden sm:inline">Upload Report</span>
-          </Button>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Welcome back, {userName}</h1>
+          <p className="text-muted-foreground mt-1">
+            Here's your health overview for today
+          </p>
         </div>
 
         {/* Overview Cards */}
@@ -58,9 +71,9 @@ const Dashboard = () => {
               <Pill className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{takenCount}/{totalDoses}</div>
+              <div className="text-2xl font-bold">{activeMedicinesCount}</div>
               <p className="text-xs text-muted-foreground mt-1">
-                Doses taken today
+                Active medicines
               </p>
               <Progress value={adherencePercentage} className="mt-3" />
             </CardContent>
@@ -72,12 +85,14 @@ const Dashboard = () => {
               <Bell className="h-4 w-4 text-secondary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
+              <div className="text-2xl font-bold">{activeRemindersCount}</div>
               <p className="text-xs text-muted-foreground mt-1">
                 Reminders set
               </p>
               <p className="text-xs text-muted-foreground">
-                Next: No upcoming reminders
+                {nextReminder 
+                  ? `Next: ${format(new Date(nextReminder.reminder_time), "MMM d, h:mm a")}`
+                  : "Next: No upcoming reminders"}
               </p>
             </CardContent>
           </Card>
@@ -88,12 +103,14 @@ const Dashboard = () => {
               <FileText className="h-4 w-4 text-accent" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
+              <div className="text-2xl font-bold">{reportsCount}</div>
               <p className="text-xs text-muted-foreground mt-1">
                 Reports uploaded
               </p>
               <p className="text-xs text-muted-foreground">
-                Last: No reports yet
+                {lastReport 
+                  ? `Last: ${format(new Date(lastReport.upload_date), "MMM d, yyyy")}`
+                  : "Last: No reports yet"}
               </p>
             </CardContent>
           </Card>
@@ -106,34 +123,38 @@ const Dashboard = () => {
             <CardDescription>Track your medication for {new Date().toLocaleDateString()}</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col items-center justify-center py-12">
-              <Pill className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No medicines added yet</h3>
-              <p className="text-muted-foreground text-center mb-4">
-                Add your first medicine to start tracking
-              </p>
-            </div>
+            {medicinesLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+              </div>
+            ) : activeMedicinesCount > 0 ? (
+              <div className="space-y-3">
+                {medicines.slice(0, 3).map((medicine) => (
+                  <div key={medicine.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <Pill className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">{medicine.medicine_name}</p>
+                      <p className="text-xs text-muted-foreground">{medicine.dosage} - {medicine.frequency}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Pill className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No medicines added yet</h3>
+                <p className="text-muted-foreground text-center mb-4">
+                  Add your first medicine to start tracking
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Quick AI Insight */}
-        <Card className="bg-gradient-to-br from-primary/5 to-secondary/5 border-primary/20">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5 text-primary" />
-              Quick AI Insight
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm leading-relaxed">
-              Upload your first health report to get personalized AI insights about your health.
-            </p>
-            <Button variant="outline" className="mt-4" onClick={() => setUploadDialogOpen(true)}>
-              <Upload className="mr-2 h-4 w-4" />
-              Upload Report
-            </Button>
-          </CardContent>
-        </Card>
+        {/* Reminders Calendar */}
+        <ReminderCalendar />
       </div>
     </AppShell>
   );
