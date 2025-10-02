@@ -56,15 +56,22 @@ const Reminders = () => {
       return;
     }
 
+    // Convert local datetime to ISO string to preserve the user's selected time
+    const localDateTime = new Date(formData.reminder_time);
+    const reminderData = {
+      ...formData,
+      reminder_time: localDateTime.toISOString(),
+    };
+
     if (editingReminder) {
       updateReminder({
         id: editingReminder,
-        updates: formData,
+        updates: reminderData,
       });
       setShowEditDialog(false);
       setEditingReminder(null);
     } else {
-      createReminder(formData);
+      createReminder(reminderData);
       setShowCreateDialog(false);
     }
     
@@ -80,11 +87,17 @@ const Reminders = () => {
 
   const handleEdit = (reminder: any) => {
     setEditingReminder(reminder.id);
+    // Convert ISO string to local datetime format for the input
+    const reminderDate = new Date(reminder.reminder_time);
+    const localDateTime = new Date(reminderDate.getTime() - reminderDate.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16);
+    
     setFormData({
       title: reminder.title,
       description: reminder.description,
       reminder_type: reminder.reminder_type,
-      reminder_time: reminder.reminder_time,
+      reminder_time: localDateTime,
       is_recurring: reminder.is_recurring,
       recurrence_pattern: reminder.recurrence_pattern,
     });
