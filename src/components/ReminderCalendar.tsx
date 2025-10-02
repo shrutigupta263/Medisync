@@ -39,13 +39,32 @@ const ReminderCalendar = () => {
               mode="single"
               selected={selectedDate}
               onSelect={setSelectedDate}
-              className="rounded-md border pointer-events-auto"
+              className="rounded-lg pointer-events-auto"
               modifiers={{
                 hasReminder: datesWithReminders,
               }}
               modifiersClassNames={{
-                hasReminder: "relative font-bold before:absolute before:bottom-1 before:left-1/2 before:-translate-x-1/2 before:w-1 before:h-1 before:rounded-full before:bg-primary",
-                selected: "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground hover:from-primary hover:to-primary/90 shadow-md shadow-primary/20"
+                hasReminder: "relative font-bold before:absolute before:bottom-1 before:left-1/2 before:-translate-x-1/2 before:w-1.5 before:h-1.5 before:rounded-full before:bg-blue-400",
+                selected: "bg-gradient-to-br from-blue-400 to-blue-500 text-white hover:from-blue-500 hover:to-blue-600 shadow-lg shadow-blue-200 dark:shadow-blue-900/50 rounded-lg"
+              }}
+              classNames={{
+                months: "space-y-4",
+                month: "space-y-4",
+                caption: "flex justify-center pt-1 relative items-center",
+                caption_label: "text-sm font-medium",
+                nav: "space-x-1 flex items-center",
+                nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors",
+                table: "w-full border-collapse space-y-1",
+                head_row: "flex",
+                head_cell: "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
+                row: "flex w-full mt-2",
+                cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-transparent focus-within:relative focus-within:z-20",
+                day: "h-9 w-9 p-0 font-normal hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors",
+                day_selected: "bg-gradient-to-br from-blue-400 to-blue-500 text-white hover:from-blue-500 hover:to-blue-600 shadow-lg shadow-blue-200 dark:shadow-blue-900/50 rounded-lg",
+                day_today: "bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100 font-semibold rounded-lg",
+                day_outside: "text-muted-foreground opacity-50",
+                day_disabled: "text-muted-foreground opacity-50",
+                day_hidden: "invisible",
               }}
             />
           </div>

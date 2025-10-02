@@ -31,7 +31,10 @@ import {
   Trash2,
 } from "lucide-react";
 import { useMedicines, CreateMedicineData } from "@/hooks/useMedicines";
+import { useMedicineTracking } from "@/hooks/useMedicineTracking";
 import { format } from "date-fns";
+import { Badge } from "@/components/ui/badge";
+import { Check, X } from "lucide-react";
 
 const Medicine = () => {
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -40,6 +43,7 @@ const Medicine = () => {
   const [editingMedicine, setEditingMedicine] = useState<string | null>(null);
   
   const { medicines, isLoading, createMedicine, updateMedicine, deleteMedicine, isCreating } = useMedicines();
+  const { getStatus, markStatus, isUpdating } = useMedicineTracking();
   
   const [formData, setFormData] = useState<CreateMedicineData>({
     medicine_name: "",
@@ -202,41 +206,81 @@ const Medicine = () => {
                         <TableHead>Frequency</TableHead>
                         <TableHead>Start Date</TableHead>
                         <TableHead>End Date</TableHead>
-                        <TableHead>Notes</TableHead>
+                        <TableHead>Today's Status</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {medicines.map((medicine) => (
-                        <TableRow key={medicine.id}>
-                          <TableCell className="font-medium">{medicine.medicine_name}</TableCell>
-                          <TableCell>{medicine.dosage}</TableCell>
-                          <TableCell>{medicine.frequency}</TableCell>
-                          <TableCell>{format(new Date(medicine.start_date), "MMM dd, yyyy")}</TableCell>
-                          <TableCell>
-                            {medicine.end_date ? format(new Date(medicine.end_date), "MMM dd, yyyy") : "Ongoing"}
-                          </TableCell>
-                          <TableCell className="max-w-[200px] truncate">{medicine.notes || "-"}</TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleEdit(medicine)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDelete(medicine.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {medicines.map((medicine) => {
+                        const status = getStatus(medicine.id);
+                        return (
+                          <TableRow key={medicine.id}>
+                            <TableCell className="font-medium">{medicine.medicine_name}</TableCell>
+                            <TableCell>{medicine.dosage}</TableCell>
+                            <TableCell>{medicine.frequency}</TableCell>
+                            <TableCell>{format(new Date(medicine.start_date), "MMM dd, yyyy")}</TableCell>
+                            <TableCell>
+                              {medicine.end_date ? format(new Date(medicine.end_date), "MMM dd, yyyy") : "Ongoing"}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                {status === "taken" ? (
+                                  <Badge variant="default" className="bg-green-500 hover:bg-green-600">
+                                    <Check className="h-3 w-3 mr-1" />
+                                    Taken
+                                  </Badge>
+                                ) : status === "missed" ? (
+                                  <Badge variant="destructive">
+                                    <X className="h-3 w-3 mr-1" />
+                                    Missed
+                                  </Badge>
+                                ) : (
+                                  <div className="flex gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-7 text-xs border-green-500 text-green-600 hover:bg-green-50"
+                                      onClick={() => markStatus({ medicineId: medicine.id, status: "taken" })}
+                                      disabled={isUpdating}
+                                    >
+                                      <Check className="h-3 w-3 mr-1" />
+                                      Taken
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-7 text-xs border-red-500 text-red-600 hover:bg-red-50"
+                                      onClick={() => markStatus({ medicineId: medicine.id, status: "missed" })}
+                                      disabled={isUpdating}
+                                    >
+                                      <X className="h-3 w-3 mr-1" />
+                                      Missed
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleEdit(medicine)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDelete(medicine.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </CardContent>
