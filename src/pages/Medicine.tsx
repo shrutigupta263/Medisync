@@ -43,7 +43,7 @@ const Medicine = () => {
   const [editingMedicine, setEditingMedicine] = useState<string | null>(null);
   
   const { medicines, isLoading, createMedicine, updateMedicine, deleteMedicine, isCreating } = useMedicines();
-  const { getStatus, markStatus, isUpdating } = useMedicineTracking();
+  const { getStatus, markStatus, isUpdating, trackingData } = useMedicineTracking();
   
   const [formData, setFormData] = useState<CreateMedicineData>({
     medicine_name: "",
@@ -54,9 +54,12 @@ const Medicine = () => {
     notes: null,
   });
 
-  const takenDoses = 0;
+  // Calculate adherence based on actual tracking data
+  const takenDoses = trackingData.filter(t => t.status === "taken").length;
+  const missedDoses = trackingData.filter(t => t.status === "missed").length;
   const totalDoses = medicines.length;
-  const adherencePercentage = totalDoses > 0 ? Math.round((takenDoses / totalDoses) * 100) : 0;
+  const trackedTotal = takenDoses + missedDoses;
+  const adherencePercentage = trackedTotal > 0 ? Math.round((takenDoses / trackedTotal) * 100) : 0;
 
   const handleSubmit = () => {
     if (!formData.medicine_name || !formData.dosage || !formData.frequency || !formData.start_date) {
@@ -149,9 +152,7 @@ const Medicine = () => {
                   <p className="text-xs text-muted-foreground">Taken</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-error">
-                    {totalDoses - takenDoses}
-                  </p>
+                  <p className="text-2xl font-bold text-error">{missedDoses}</p>
                   <p className="text-xs text-muted-foreground">Missed</p>
                 </div>
                 <div className="text-center">
