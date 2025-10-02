@@ -233,6 +233,9 @@ const Analysis = () => {
               </Link>
             </CardContent>
           </Card>
+
+          {/* Health Chatbot - AI Analysis page (below Go to Reports button) */}
+          <HealthChatbot />
         </div>
       </AppShell>
     );
