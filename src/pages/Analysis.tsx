@@ -275,9 +275,6 @@ const Analysis = () => {
           )}
         </div>
 
-        {/* Health Chatbot - placed directly below header */}
-        <HealthChatbot reportId={reportId || undefined} />
-
         {isAnalyzing && (
           <Card>
             <CardContent className="flex items-center justify-center py-12">
