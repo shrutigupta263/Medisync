@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageCircle, Send } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Message {
   role: "user" | "assistant";
@@ -13,13 +14,14 @@ interface Message {
 
 interface HealthChatbotProps {
   reportId?: string;
+  reportContext?: string;
 }
 
-const HealthChatbot = ({ reportId }: HealthChatbotProps) => {
+const HealthChatbot = ({ reportId, reportContext }: HealthChatbotProps) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Hello! I'm your health assistant. Ask me any questions about your health report or general health inquiries.",
+      content: "Hello! I'm your medical health assistant. Ask me questions about your health report, medical parameters, or general health topics.",
     },
   ]);
   const [input, setInput] = useState("");
@@ -34,19 +36,25 @@ const HealthChatbot = ({ reportId }: HealthChatbotProps) => {
     setIsLoading(true);
 
     try {
-      // Placeholder for AI integration
-      // In production, this would call your Lovable AI edge function
+      const { data, error } = await supabase.functions.invoke('health-chat', {
+        body: { 
+          message: input,
+          reportContext: reportContext || null
+        }
+      });
+
+      if (error) throw error;
+
       const assistantMessage: Message = {
         role: "assistant",
-        content: "This is a placeholder response. To enable AI-powered health insights, integrate with Lovable AI through an edge function.",
+        content: data.reply,
       };
 
-      setTimeout(() => {
-        setMessages((prev) => [...prev, assistantMessage]);
-        setIsLoading(false);
-      }, 1000);
+      setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
+      console.error('Chat error:', error);
       toast.error("Failed to send message");
+    } finally {
       setIsLoading(false);
     }
   };
