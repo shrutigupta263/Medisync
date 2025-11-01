@@ -46,6 +46,125 @@ serve(async (req) => {
       }
     }
 
+    // First, validate if this is medical content
+    console.log('Validating medical content...');
+    const validationPrompt = `You are a medical document classifier. Analyze this document and determine if it contains medical or health data.
+
+Valid MEDICAL content includes:
+- Laboratory test results (blood tests, urine tests, imaging reports)
+- Medical parameters and measurements (CBC, liver function, kidney function, glucose, cholesterol, etc.)
+- Prescriptions or medication records
+- Health checkup reports
+- Medical diagnosis or clinical notes
+- Hospital discharge summaries
+- Vaccination records
+
+NON-MEDICAL content includes:
+- Resumes or CVs
+- Invoices or bills (unless specifically medical bills with health data)
+- General text documents
+- Business documents
+- Personal letters or emails
+- Random images without medical context
+
+IMPORTANT: Be generous with medical content - if there's ANY legitimate medical/health data present, consider it VALID. Only reject clearly non-medical files.
+
+Respond with ONLY "MEDICAL" if this contains health/medical data, or "NOT_MEDICAL" if it does not.`;
+
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY not configured');
+    }
+
+    const isImage = report.file_type?.startsWith('image/');
+    
+    const validationPayload: any = {
+      model: 'google/gemini-2.5-flash',
+      messages: [
+        { role: 'user', content: validationPrompt }
+      ]
+    };
+
+    // Add image content if it's an image file
+    if (fileContent && isImage) {
+      const arrayBuffer = await fileContent.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      
+      let base64 = '';
+      const chunkSize = 8192;
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        const chunk = bytes.slice(i, i + chunkSize);
+        base64 += String.fromCharCode(...chunk);
+      }
+      base64 = btoa(base64);
+      
+      validationPayload.messages[0].content = [
+        { type: 'text', text: validationPrompt },
+        { 
+          type: 'image_url', 
+          image_url: { url: `data:${report.file_type};base64,${base64}` }
+        }
+      ];
+    }
+
+    const validationResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(validationPayload),
+    });
+
+    if (!validationResponse.ok) {
+      console.error('Validation request failed:', validationResponse.status);
+      throw new Error('Failed to validate content');
+    }
+
+    const validationData = await validationResponse.json();
+    const validationResult = validationData.choices?.[0]?.message?.content?.trim().toUpperCase();
+    
+    console.log('Validation result:', validationResult);
+
+    // If not medical content, store a special message instead of doing analysis
+    if (validationResult === 'NOT_MEDICAL') {
+      const nonMedicalResult = {
+        is_medical: false,
+        message: "This file doesn't appear to contain medical data, so AI analysis is not available.",
+        final_summary: "This file doesn't appear to contain medical data, so AI analysis is not available."
+      };
+
+      await supabaseClient
+        .from('report_analysis')
+        .upsert({
+          report_id: reportId,
+          analysis_json: nonMedicalResult,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'report_id' });
+
+      await supabaseClient
+        .from('health_reports')
+        .update({
+          analysis_status: 'completed',
+          analyzed_at: new Date().toISOString(),
+        })
+        .eq('id', reportId);
+
+      console.log('Non-medical content detected, analysis skipped');
+
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          is_medical: false,
+          message: nonMedicalResult.message,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // If medical content, proceed with full AI analysis
+    console.log('Medical content confirmed, proceeding with analysis...');
+
     // Prepare AI prompt with the new comprehensive structure
     const systemPrompt = `You are a medical AI assistant analyzing a patient's uploaded lab report.
 The report text/parameters will be provided below.

@@ -50,27 +50,7 @@ export const useReports = () => {
 
       if (dbError) throw dbError;
 
-      // First validate if this is a medical report
-      const { data: validationResult, error: validationError } = await supabase.functions.invoke('validate-medical-report', {
-        body: { reportId: data.id }
-      });
-
-      if (validationError) {
-        console.error('Validation failed:', validationError);
-        // Delete the uploaded file and record if validation fails
-        await supabase.storage.from("health-reports").remove([fileName]);
-        await supabase.from("health_reports").delete().eq("id", data.id);
-        throw new Error('Failed to validate document. Please try again.');
-      }
-
-      if (!validationResult.isValid) {
-        // Delete the uploaded file and record if not a medical report
-        await supabase.storage.from("health-reports").remove([fileName]);
-        await supabase.from("health_reports").delete().eq("id", data.id);
-        throw new Error(validationResult.message || 'This file doesn\'t appear to be a valid medical report.');
-      }
-
-      // Only trigger AI analysis if validation passed
+      // Trigger AI analysis (will validate medical content internally)
       const { error: analysisError } = await supabase.functions.invoke('analyze-report', {
         body: { reportId: data.id }
       });
