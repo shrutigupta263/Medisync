@@ -258,8 +258,7 @@ Return ONLY a valid JSON object with these keys:
 - Always highlight abnormal values clearly.
 - Output ONLY valid JSON, no extra text or markdown.`;
 
-    // Check if file is an actual image (not PDF)
-    const isImage = report.file_type?.startsWith('image/');
+    // Reuse the isImage variable from earlier
     
     // Prepare content for AI
     let userPrompt = `Analyze this lab report and provide comprehensive health analysis.`;
@@ -275,8 +274,7 @@ Return ONLY a valid JSON object with these keys:
 Create a detailed analysis following the structure required.`;
     }
     
-    // Call Lovable AI (Gemini)
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    // Call Lovable AI (Gemini) - reuse the API key from earlier
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY not configured');
     }
