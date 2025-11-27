@@ -16,7 +16,7 @@ MediSync is a complete health management solution that enables users to:
 
 ## 🚀 Live Demo
 
-Visit the deployed application at: [MediSync Demo](https://your-demo-url.com)
+Visit the deployed application at: [MediSync Demo](https://medisync0.netlify.app/dashboard)
 
 ## 📋 Table of Contents
 
@@ -225,7 +225,7 @@ Before you begin, ensure you have the following installed:
 1. **Clone the repository**
 
 ```bash
-git clone https://github.com/your-username/Medisync-1.git
+git clone https://github.com/shrutigupta263/Medisync-1.git
 cd Medisync-1
 ```
 
@@ -701,14 +701,6 @@ Contributions are welcome! Please follow these steps:
 - Test your changes thoroughly
 - Update documentation as needed
 
-## 📝 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 👥 Authors
-
-- **Your Name** - *Initial work*
-
 ## 🙏 Acknowledgments
 
 - Supabase for the amazing backend infrastructure
@@ -717,12 +709,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - Lovable for AI integration
 - The open-source community
 
-## 📧 Contact
-
-For questions or support:
-
-- Email: support@medisync.com
-- GitHub Issues: [Create an issue](https://github.com/your-username/Medisync-1/issues)
 
 ## 🗺 Roadmap
 
